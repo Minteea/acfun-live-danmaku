@@ -3,7 +3,7 @@ import AcClient from "../client";
 import acClient from "../index";
 
 //使用init(主播房间号)初始化客户端
-acClient("378269").then((ac_client?: AcClient) => {//1345673
+acClient("4599324").then((ac_client?: AcClient) => {//1345673
     if (!ac_client) {
         console.log("初始化客户端失败")
         return
@@ -31,6 +31,15 @@ acClient("378269").then((ac_client?: AcClient) => {//1345673
         //收到的礼物
         console.log(gift);
     });
+    ac_client.on("LiveClosed", () => {
+        console.log("直播结束")
+    });
+    ac_client.on("close", () => {
+        console.log("连接已关闭")
+    })
+    ac_client.on("connect", () => {
+        console.log("已连接到直播服务器")
+    })
     /*
     ac_client.on("UnknownAction", (msg) => {
         console.log(msg.data || msg.signalType);

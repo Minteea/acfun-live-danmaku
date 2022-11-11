@@ -1,8 +1,3 @@
-/*
- * @Date: 2020-09-12 10:57:39
- * @LastEditors: kanoyami
- * @LastEditTime: 2020-09-14 17:58:53
- */
 import cookie from "cookie";
 import got from "got";
 import querystring from "querystring";

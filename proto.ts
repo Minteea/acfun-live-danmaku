@@ -1,8 +1,3 @@
-/*
- * @Date: 2020-09-12 19:04:27
- * @LastEditors: kanoyami
- * @LastEditTime: 2020-09-16 17:51:44
- */
 import ProtoBufJs from "protobufjs";
 import crypto from "crypto";
 

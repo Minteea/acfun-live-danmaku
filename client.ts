@@ -1,13 +1,8 @@
-/*
- * @Date: 2020-09-12 16:54:29
- * @LastEditors: kongzenwang
- * @LastEditTime: 2020-12-21 16:31:49
- */
 import ProtoBufJs from "protobufjs";
 import tools from "./tools";
 import _ from "lodash";
 import commandHandler from "./handler/commandHandler";
-import { client as WebSocketClient } from "websocket";
+import WebSocket from "websocket";
 import proto from "./proto";
 import { EventEmitter } from "events";
 import { resolve } from "path";
@@ -27,7 +22,7 @@ export default class AcClient extends EventEmitter{
   availableTickets: LiveInfo["availableTickets"]
   enterRoomAttach: LiveInfo["enterRoomAttach"]
   
-  connection: any = null
+  connection: WebSocket.connection | null = null
   seqId = 1
   instanceId = 0;
   sessionKey = "";
@@ -63,7 +58,7 @@ export default class AcClient extends EventEmitter{
   }
 
   sendBytes(buffer: any) {
-    if (this.connection.connected) {
+    if (this.connection?.connected) {
       this.connection.sendBytes(buffer);
       this.seqId++;
     } else
@@ -115,16 +110,21 @@ export default class AcClient extends EventEmitter{
       )
     );
   };
+  wsClose() {
+    this.connection?.close()
+  }
   /** 连接ws服务 */
   wsStart() {
-    let client = new WebSocketClient();
+    if (this.connection?.connected) return
+
+    const client = new WebSocket.client();
 
     client.on("connectFailed", function (error) {
       console.log("Connect Error: " + error.toString());
     });
 
     client.on("connect", (connection) => {
-      console.log("WebSocket Client to Kuaishou Connected");
+      this.emit("connect");
       this.connection = connection;
       let register = proto.genRegisterPack(
         this.seqId,
@@ -140,7 +140,7 @@ export default class AcClient extends EventEmitter{
       this.connection.on("close", () => {
         console.warn("ws connection closed.");
         this.seqId = 1;
-        this.emit("decode-error");
+        this.emit("close");
       });
       this.connection.on("message", async (message: any) => {
         //console.log(message)
@@ -150,9 +150,8 @@ export default class AcClient extends EventEmitter{
           }
         } catch (error) {
           console.log(error);
-          this.connection.close();
+          this.connection?.close();
         }
-
       });
     });
 

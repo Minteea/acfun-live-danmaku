@@ -53,16 +53,16 @@ export default async function CommandHandler(payload: any, client: AcClient) {
             );
             switch (ztLiveScStatusChanged.type) {
               case liveStateType.values.LIVE_CLOSED:  // 直播结束
-                client.emit("live_closed", ztLiveScStatusChanged)
+                client.emit("LiveClosed", ztLiveScStatusChanged)
                 break;
               case liveStateType.values.LIVE_BANNED:  // 直播间被封禁
-                client.emit("live_banned", ztLiveScStatusChanged)
+                client.emit("LiveBanned", ztLiveScStatusChanged)
                 break;
               case liveStateType.values.NEW_LIVE_OPENED:    // 开启新直播
-                client.emit("new_live_opened", ztLiveScStatusChanged)
+                client.emit("NewLiveOpened", ztLiveScStatusChanged)
                 break;
               case liveStateType.values.LIVE_URL_CHANGED:   // 直播url更改
-                client.emit("live_url_changed", ztLiveScStatusChanged)
+                client.emit("LiveUrlChanged", ztLiveScStatusChanged)
                 break;
             }
             break;
