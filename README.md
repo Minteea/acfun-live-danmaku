@@ -47,7 +47,7 @@ AcClient("8500263").then(() => {
 或者
 
 ``` JavaScript
-const AcClient = require("ac-danmu")
+const AcClient = require("acfun-live-danmaku")
 
 //使用init(主播房间号)初始化客户端
 ac_client = await AcClient("8500263")
