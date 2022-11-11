@@ -3,14 +3,14 @@
  * @LastEditors: kanoyami
  * @LastEditTime: 2020-09-16 17:51:44
  */
+import ProtoBufJs from "protobufjs";
+import crypto from "crypto";
 
-const ProtoBufJs = require("protobufjs");
 const acConfig = require("./config/config.json");
 const ROOT = ProtoBufJs.Root.fromJSON(require("./protos.bundle.json"));
-const crypto = require("crypto");
 const EncryptionMode = ROOT.lookupEnum("EncryptionMode");
 let base = {
-  genCommand: (command, msg, ticket, liveId) => {
+  genCommand: (command: any, msg: any, ticket: any, liveId: any) => {
     const ZtLiveCsCmd = ROOT.lookupType("ZtLiveCsCmd");
     let payload = {
       cmdType: command,
@@ -21,7 +21,7 @@ let base = {
     let ztLiveCsCmd = ZtLiveCsCmd.create(payload);
     return ZtLiveCsCmd.encode(ztLiveCsCmd).finish();
   },
-  genPayload: (seqId, retryCount, command, msg) => {
+  genPayload: (seqId: any, retryCount: any, command: any, msg: any) => {
     const UpstreamPayload = ROOT.lookupType("UpstreamPayload");
     let payload = {
       command: command,
@@ -38,16 +38,16 @@ let base = {
    * @argument key {string}
    */
   genHeader: (
-    seqId,
-    instanceId,
-    uid,
-    length,
+    seqId: any,
+    instanceId: any,
+    uid: any,
+    length: any,
     encryptionMode = EncryptionMode.values.kEncryptionSessionKey,
-    token
+    token?: any
   ) => {
     const PacketHeader = ROOT.lookupType("PacketHeader");
 
-    let payload = {
+    let payload: any = {
       flags: null,
       encodingType: null,
       tokenInfo: null,
@@ -69,7 +69,7 @@ let base = {
     // console.log(PacketHeader.decode(buffer))
     return buffer;
   },
-  genEnterRoom: (enterRoomAttach) => {
+  genEnterRoom: (enterRoomAttach: any) => {
     const ZtLiveCsEnterRoom = ROOT.lookupType("ZtLiveCsEnterRoom");
     let payload = {
       enterRoomAttach: enterRoomAttach,
@@ -89,7 +89,7 @@ let base = {
     let keepAliveRequest = KeepAliveRequest.create(payload);
     return KeepAliveRequest.encode(keepAliveRequest).finish();
   },
-  genRegister: (instanceId, uid) => {
+  genRegister: (instanceId: any, uid: any) => {
     const RegisterRequest = ROOT.lookupType("RegisterRequest");
     const PlatformType = ROOT.lookupEnum("DeviceInfo.PlatformType");
     const PresenceStatus = ROOT.lookupEnum("RegisterRequest.PresenceStatus");
@@ -119,7 +119,7 @@ let base = {
     // console.log(RegisterRequest.decode(buffer))
     return buffer;
   },
-  genHeartbeat: (seqId) => {
+  genHeartbeat: (seqId: any) => {
     const ZtLiveCsHeartbeat = ROOT.lookupType("ZtLiveCsHeartbeat");
     let payload = {
       clientTimestampMs: new Date().getTime(),
@@ -128,7 +128,7 @@ let base = {
     let ztLiveCsHeartbeat = ZtLiveCsHeartbeat.create(payload);
     return ZtLiveCsHeartbeat.encode(ztLiveCsHeartbeat).finish();
   },
-  encode: (header, body, key) => {
+  encode: (header: any, body: any, key: any) => {
     // console.log(UpstreamPayload.decode(body))
     //console.log(body.length)
     const iv = crypto.randomBytes(16);
@@ -157,8 +157,8 @@ let base = {
   },
 };
 
-module.exports = {
-  decrypt: (buffer, key) => {
+export default {
+  decrypt: (buffer: any, key: any) => {
     try {
       let headersize = buffer.readInt32BE(4);
       let keyBuffer = Buffer.from(key, "base64");
@@ -175,13 +175,13 @@ module.exports = {
     }
 
   },
-  decodeHeader: (buffer) => {
+  decodeHeader: (buffer: any) => {
     const PacketHeader = ROOT.lookupType("PacketHeader");
     let headersize = buffer.readInt32BE(4);
     let header = buffer.slice(12, 12 + headersize);
     return PacketHeader.decode(header);
   },
-  genPushMessagePack: (seqId, instanceId, uid, key) => {
+  genPushMessagePack: (seqId: any, instanceId: any, uid: any, key: any) => {
     let payload = base.genPayload(
       seqId,
       1,
@@ -194,7 +194,7 @@ module.exports = {
       key
     );
   },
-  genHeartbeatPack: (seqId, instanceId, uid, key, ticket, liveId) => {
+  genHeartbeatPack: (seqId: any, instanceId: any, uid: any, key: any, ticket: any, liveId: any) => {
     let heartbeatBody = base.genHeartbeat(seqId);
     let cmd = base.genCommand(
       "ZtLiveCsHeartbeat",
@@ -215,13 +215,13 @@ module.exports = {
     );
   },
   genEnterRoomPack: (
-    seqId,
-    instanceId,
-    uid,
-    key,
-    enterRoomAttach,
-    ticket,
-    liveId
+    seqId: any,
+    instanceId: any,
+    uid: any,
+    key: any,
+    enterRoomAttach: any,
+    ticket: any,
+    liveId: any
   ) => {
     let enterRoom = base.genEnterRoom(enterRoomAttach);
     let enterRoomCmd = base.genCommand(
@@ -243,7 +243,7 @@ module.exports = {
       key
     );
   },
-  genRegisterPack: (seqId, instanceId, uid, key, token) => {
+  genRegisterPack: (seqId: any, instanceId: any, uid: any, key: any, token: any) => {
     let register = base.genRegister(instanceId, uid);
     let registerBody = base.genPayload(seqId, 1, "Basic.Register", register);
     let bodySize = registerBody.length;
@@ -260,7 +260,7 @@ module.exports = {
       key
     );
   },
-  genKeepAlivePack: (seqId, instanceId, uid, key) => {
+  genKeepAlivePack: (seqId: any, instanceId: any, uid: any, key: any) => {
     let keepAlive = base.genKeepAlive();
     let keepAliveBody = base.genPayload(seqId, 1, "Basic.KeepAlive", keepAlive);
     let bodySize = keepAliveBody.length;
@@ -269,32 +269,5 @@ module.exports = {
       keepAliveBody,
       key
     );
-  },
-  /**
-   * @argument buffer {Buffer}
-   */
-  decodePackTest: (buffer, key) => {
-    console.log(buffer.toString("hex"));
-    //let keyBuffer = Buffer.from(key, "base64")
-    const DownstreamPayload = ROOT.lookupType("DownstreamPayload");
-    const PacketHeader = ROOT.lookupType("PacketHeader");
-    const RegisterResponse = ROOT.lookupType("RegisterResponse");
-    let headersize = buffer.readInt32BE(4);
-    let bodysize = buffer.readInt32BE(8);
-    console.log("headerSize:" + headersize);
-    console.log("bodysize:" + bodysize);
-    let header = buffer.slice(12, 12 + headersize);
-    let headerDecode = PacketHeader.decode(header);
-    console.log(headerDecode);
-    // let ivBuffer = buffer.slice(12 + headersize, 28 + headersize)
-    // let bodyBuffer = buffer.slice(28 + headersize)
-    // let decipher = crypto.createDecipheriv("AES-128-CBC", keyBuffer, ivBuffer)
-    // let decryptedWithoutFinal = decipher.update(bodyBuffer)
-    // let finalDe = decipher.final()
-    // let decrypted = Buffer.concat([decryptedWithoutFinal, finalDe])
-    console.log("decoudeSize:" + decrypted.toString("hex"));
-    let payload = DownstreamPayload.decode(decrypted);
-
-    let rr = RegisterResponse.decode(payload.payloadData);
   },
 };

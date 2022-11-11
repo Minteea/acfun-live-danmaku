@@ -1,24 +1,19 @@
-/*
- * @Date: 2020-09-15 14:52:17
- * @LastEditors: kanoyami
- * @LastEditTime: 2020-09-16 02:28:13
- */
-
-const ProtoBufJs = require("protobufjs");
+import ProtoBufJs from "protobufjs";
+import StateHandler from "./stateHandler";
+import ActionHandler from "./actionHandler";
+import { unzip } from "zlib";
+import { promisify } from "util";
+import proto from "../proto";
+import AcClient from "../client";
 const ROOT = ProtoBufJs.Root.fromJSON(require("../protos.bundle.json"));
-const StateHandler = require("./state.handler");
-const ActionHandler = require("./action.handler");
-const { unzip } = require("zlib");
-const { promisify } = require("util");
 const do_unzip = promisify(unzip);
-const proto = require("../proto");
-module.exports =
   /**
    *
    * @param {Object} payload
    * @param  client
    */
-  async function CommandHandler(payload, client) {
+
+export default async function CommandHandler(payload: any, client: AcClient) {
     switch (payload.command) {
       case "Push.ZtLiveInteractive.Message":
         const ZtLiveScMessage = ROOT.lookupType("ZtLiveScMessage");
@@ -31,41 +26,50 @@ module.exports =
             client.instanceId,
             client.userId,
             client.sessionKey
-          ,"d4")
+          )
         );
-        let ztPayload = ZtLiveScMessage.decode(payload.payloadData);
+        let ztPayload: any = ZtLiveScMessage.decode(payload.payloadData);
         let msg = ztPayload.payload;
         if (ztPayload.compressionType == CompressionType.values.GZIP)
           msg = await do_unzip(ztPayload.payload);
         switch (ztPayload.messageType) {
-          case "ZtLiveScActionSignal":
+          case "ZtLiveScActionSignal":  // 直播Action类型信息
             ActionHandler(msg, client);
             break;
-          case "ZtLiveScStateSignal":
+          case "ZtLiveScStateSignal":   // 直播State类型信息
             //todo
             StateHandler(msg, client);
             break;
           case "ZtLiveScNotifySignal":
             //todo
             break;
-          case "ZtLiveScStatusChanged":
+          case "ZtLiveScStatusChanged": // 直播状态发生变化
             const ZtLiveScStatusChanged = ROOT.lookupType(
               "ZtLiveScStatusChanged"
             );
             const liveStateType = ROOT.lookupEnum("ZtLiveScStatusChanged.Type");
-            ztLiveScStatusChanged = ZtLiveScStatusChanged.decode(
+            let ztLiveScStatusChanged: any = ZtLiveScStatusChanged.decode(
               ztPayload.payload
             );
-            if (
-              ztLiveScStatusChanged.type == liveStateType.values.LIVE_CLOSED ||
-              ztLiveScStatusChanged.type == liveStateType.values.LIVE_BANNED
-            )
-              console.log("live结束或者被Ban");
+            switch (ztLiveScStatusChanged.type) {
+              case liveStateType.values.LIVE_CLOSED:  // 直播结束
+                client.emit("live_closed", ztLiveScStatusChanged)
+                break;
+              case liveStateType.values.LIVE_BANNED:  // 直播间被封禁
+                client.emit("live_banned", ztLiveScStatusChanged)
+                break;
+              case liveStateType.values.NEW_LIVE_OPENED:    // 开启新直播
+                client.emit("new_live_opened", ztLiveScStatusChanged)
+                break;
+              case liveStateType.values.LIVE_URL_CHANGED:   // 直播url更改
+                client.emit("live_url_changed", ztLiveScStatusChanged)
+                break;
+            }
             break;
           case "ZtLiveScTicketInvalid":
             console.log("changeKey");
             client.ticketIndex =
-              (client.ticketIndex + 1) / client.availiableTickets.length;
+              (client.ticketIndex + 1) / client.availableTickets.length;
             client.sendBytes(
               proto.genEnterRoomPack(
                 client.seqId,
@@ -73,9 +77,9 @@ module.exports =
                 client.userId,
                 client.sessionKey,
                 client.enterRoomAttach,
-                client.availiableTickets[client.ticketIndex],
+                client.availableTickets[client.ticketIndex],
                 client.liveId
-              ,"d6")
+              )
             );
           default:
             console.log("unkown message type:" + ztPayload.messageType);
@@ -95,17 +99,17 @@ module.exports =
         break;
       case "Global.ZtLiveInteractive.CsCmd":
         const ZtLiveCsCmdAck = ROOT.lookupType("ZtLiveCsCmdAck");
-        let ztLiveCsCmdAck = ZtLiveCsCmdAck.decode(payload.payloadData);
+        let ztLiveCsCmdAck: any = ZtLiveCsCmdAck.decode(payload.payloadData);
         switch (ztLiveCsCmdAck.cmdAckType) {
           case "ZtLiveCsEnterRoomAck":
             const ZtLiveCsEnterRoomAck = ROOT.lookupType(
               "ZtLiveCsEnterRoomAck"
             );
-            let enterRoomAck = ZtLiveCsEnterRoomAck.decode(
+            let enterRoomAck: any = ZtLiveCsEnterRoomAck.decode(
               ztLiveCsCmdAck.payload
             );
             //发送进入事件
-            client.emit("enter", enterRoomAck);
+            client.emit("EnterRoomAck", enterRoomAck);
             let ms = enterRoomAck.heartbeatIntervalMs.toNumber()?enterRoomAck.heartbeatIntervalMs.toNumber():1000;
             client.timer = setInterval(() => {
               client.sendBytes(
@@ -114,9 +118,9 @@ module.exports =
                   client.instanceId,
                   client.userId,
                   client.sessionKey,
-                  client.availiableTickets[client.ticketIndex],
+                  client.availableTickets[client.ticketIndex],
                   client.liveId
-                ),"d7"
+                )
               );
             }, ms);
             break;

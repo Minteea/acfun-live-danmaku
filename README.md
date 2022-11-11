@@ -4,15 +4,16 @@
  * @LastEditTime: 2020-10-09 15:50:49
 -->
 
-# ac-danmu.js
+# acfun-live-danmaku
 
 ## 简介
 
-* ac-danmu.js是[orzogc/acfundanmu](https://github.com/orzogc/acfundanmu)的Nodejs实现，这两个项目的诞生都离不开[wpscott/AcFunDanmaku](https://github.com/wpscott/AcFunDanmaku/tree/master/AcFunDanmu)提供的实现思路和配置文件，请给他们点Star
+* acfun-live-danmaku是基于[ACFUN-FOSS/ac-danmu.js](https://github.com/ACFUN-FOSS/ac-danmu.js)的Typescript改进版本，是[orzogc/acfundanmu](https://github.com/orzogc/acfundanmu)的Nodejs实现
+* 这些项目的诞生都离不开[wpscott/AcFunDanmaku](https://github.com/wpscott/AcFunDanmaku/tree/master/AcFunDanmu)提供的实现思路和配置文件，请给他们点Star
 
-## ac-danmu.js是一个用于获取acfun直播弹幕的服务端js组件
+## acfun-live-danmaku是一个用于获取acfun直播弹幕的服务端js组件
 
-* 因为使用了buffer所以不能运行在浏览器环境下, 编写使用node v12 lts
+* 因为使用了buffer所以不能运行在浏览器环境下, 编写使用node v16 lts
 
 ### 可实现
 
@@ -23,16 +24,13 @@
 
 见example
 ``` JavaScript
-const AcClient = require("ac-danmu")
+const AcClient = require("acfun-live-danmaku")
 
 //使用init(主播房间号)初始化客户端
-AcClient("8500263").then((ac_client,{
-    login:ture ,//default false
-    userinfo: {username:"something",password:"something"} || [{username:"something",password:"something"}]//输入多组用户，每次重连会随机一个
-}) => {
+AcClient("8500263").then(() => {
     //启动websocket连接
     ac_client.wsStart();
-    ac_client.on("enter", () => {
+    ac_client.on("EnterRoomAck", () => {
         console.log("Enter room success!");
     });
     ac_client.on("recent-comment", (commmnets) => {
@@ -55,14 +53,14 @@ const AcClient = require("ac-danmu")
 ac_client = await AcClient("8500263")
 //启动websocket连接
 ac_client.wsStart();
-ac_client.on("enter", () => {
+ac_client.on("EnterRoomAck", () => {
     console.log("Enter room success!");
 });
-ac_client.on("recent-comment", (commmnets) => {
+ac_client.on("RecentComment", (commmnets) => {
     //获得建立连接当前的弹幕列表
     console.log(commmnets);
 });
-ac_client.on("danmaku", (danmaku) => {
+ac_client.on("Comment", (danmaku) => {
     //收到的弹幕
     console.log(danmaku);
 });
@@ -96,20 +94,21 @@ ac_client.on("danmaku", (danmaku) => {
 
 ### 事件列表
 
-| 事件           | 触发                    | payload类型                        |
-|----------------|-------------------------|------------------------------------|
-| banana         | 有人发送了香蕉            | AcfunActionSignalThrowBanana               |
-| danmaku        | 当直播中任意用户发送弹幕产生 | CommonActionSignalComment          |
-| enter          | 程序进入直播间            | null                               |
-| follow         | 有人关注了主播            | CommonActionSignalUserFollowAuthor |
-| gift           | 有人发送礼物              | CommonActionSignalGift        |
-| live-info      | 当前直播间数据状态         |CommonStateSignalDisplayInfo      |
-| redpack-info   |    不知道              |   CommonStateSignalCurrentRedpackList     |
-| recent-comment | 当前弹幕列表              | CommonActionSignalComment[]        |
-| topuser-info   | 前几名用户的数据          |  CommonStateSignalTopUsers        |
-|user-enter|用户进入直播间|CommonActionSignalUserEnterRoom
-|join-club|用户加入主播守护团|AcfunActionSignalJoinClub
+| 事件                | 消息                    | payload类型                        |
+|---------------------|-------------------------|------------------------------------|
+| EnterRoomAck                 | 程序进入直播间        | null                               |
+| Comment               | 弹幕                  | CommonActionSignalComment          |
+| Like                  | 点赞                  | CommonActionSignalLike        |
+| ThrowBanana           | ~~投蕉(已弃用)~~      | AcfunActionSignalThrowBanana               |
+| Gift                  | 发送礼物              | CommonActionSignalGift        |
+| UserFollowAuthor      | 关注主播              | CommonActionSignalUserFollowAuthor |
+| DisplayInfo           | 当前直播间数据状态     | CommonStateSignalDisplayInfo      |
+| CurrentRedpackList    | 不知道                | CommonStateSignalCurrentRedpackList     |
+| RecentComment         | 当前弹幕列表           | CommonActionSignalComment[]        |
+| TopUsers              | 前几名用户的数据       | CommonStateSignalTopUsers        |
+| UserEnterRoom         | 用户进入直播间         | CommonActionSignalUserEnterRoom
+| JoinClub              | 用户加入主播守护团     | AcfunActionSignalJoinClub     |
 
 ### 安装
 
- `npm i ac-danmu --save`
+ `npm i acfun-live-danmaku --save`

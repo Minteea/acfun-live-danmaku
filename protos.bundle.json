@@ -23,6 +23,14 @@
             "domain": {
               "type": "string",
               "id": 5
+            },
+            "quic": {
+              "type": "fixed32",
+              "id": 6
+            },
+            "quicV6": {
+              "type": "bytes",
+              "id": 7
             }
           },
           "nested": {
@@ -30,7 +38,9 @@
               "values": {
                 "kIPV4": 0,
                 "kIPV6": 1,
-                "kDomain": 2
+                "kDomain": 2,
+                "kQuic": 3,
+                "kQuicV6": 4
               }
             }
           }
@@ -128,6 +138,10 @@
               "type": "string",
               "id": 4
             },
+            "linkVersion": {
+              "type": "string",
+              "id": 5
+            },
             "extensionInfo": {
               "keyType": "string",
               "type": "string",
@@ -222,6 +236,10 @@
             "subBiz": {
               "type": "string",
               "id": 7
+            },
+            "klinkPushId": {
+              "type": "int64",
+              "id": 8
             }
           }
         },
@@ -3495,6 +3513,10 @@
             "keepaliveIntervalSec": {
               "type": "int32",
               "id": 5
+            },
+            "ipv6Available": {
+              "type": "bool",
+              "id": 6
             }
           }
         },
@@ -3511,6 +3533,26 @@
             "accessPointsConfigIpv6": {
               "type": "AccessPointsConfig",
               "id": 3
+            },
+            "accessPointsConfigQUic": {
+              "type": "AccessPointsConfig",
+              "id": 6
+            },
+            "accessPointsConfigQuicIpv6": {
+              "type": "AccessPointsConfig",
+              "id": 7
+            },
+            "flowCostSampleRate": {
+              "type": "float",
+              "id": 8
+            },
+            "commandSampleRate": {
+              "type": "float",
+              "id": 9
+            },
+            "accessPointsConfigWs": {
+              "type": "AccessPointsConfig",
+              "id": 10
             }
           }
         },
@@ -3560,6 +3602,10 @@
             "ztCommonInfo": {
               "type": "ZtCommonInfo",
               "id": 11
+            },
+            "ipv6Available": {
+              "type": "bool",
+              "id": 12
             }
           },
           "nested": {
@@ -3596,9 +3642,33 @@
               "type": "SdkOption",
               "id": 4
             },
-            "accessPointsCOnfigIpv6": {
+            "accessPointsConfigIpv6": {
               "type": "AccessPointsConfig",
               "id": 5
+            },
+            "accessPointsConfigQUic": {
+              "type": "AccessPointsConfig",
+              "id": 6
+            },
+            "accessPointsConfigQuicIpv6": {
+              "type": "AccessPointsConfig",
+              "id": 7
+            },
+            "cleanAccessPoint": {
+              "type": "bool",
+              "id": 8
+            },
+            "flowCostSampleRate": {
+              "type": "float",
+              "id": 9
+            },
+            "commandSampleRate": {
+              "type": "float",
+              "id": 10
+            },
+            "accessPointsConfigWs": {
+              "type": "AccessPointsConfig",
+              "id": 11
             }
           }
         },
@@ -3761,6 +3831,9 @@
             "COMPRESS_FAIL": 10034,
             "DECOMPRESS_FAIL": 10035,
             "OUT_OF_ORDER": 10036,
+            "OUT_OF_LIMIT": 10037,
+            "TOO_LARGE_PAYLOAD": 10038,
+            "ANONYMOUSE_ERROR": 10039,
             "BASIC_MAX": 19999
           }
         },
@@ -3902,6 +3975,10 @@
             "redirectPort": {
               "type": "uint32",
               "id": 4
+            },
+            "clientIpV6": {
+              "type": "bytes",
+              "id": 5
             }
           }
         },
@@ -3950,6 +4027,14 @@
             "kpf": {
               "type": "string",
               "id": 11
+            },
+            "clientIpV6": {
+              "type": "string",
+              "id": 12
+            },
+            "countryCode": {
+              "type": "string",
+              "id": 13
             }
           }
         },
@@ -4044,6 +4129,10 @@
             "anonymouseUser": {
               "type": "bool",
               "id": 12
+            },
+            "laneId": {
+              "type": "string",
+              "id": 13
             }
           }
         },
@@ -4109,6 +4198,14 @@
             "userIdentity": {
               "type": "ZtLiveUserIdentity",
               "id": 5
+            },
+            "f": {
+              "type": "bool",
+              "id": 6
+            },
+            "g": {
+              "type": "string",
+              "id": 7
             }
           }
         },
@@ -4144,11 +4241,134 @@
             }
           }
         },
+        "BackgroundStyle": {
+          "fields": {
+            "a": {
+              "type": "string",
+              "id": 1
+            },
+            "b": {
+              "rule": "repeated",
+              "type": "ImageCdnNode",
+              "id": 2
+            }
+          },
+          "nested": {
+            "unknown": {
+              "values": {
+                "c": 0,
+                "d": 1,
+                "e": 2
+              }
+            }
+          }
+        },
+        "Button": {
+          "fields": {
+            "a": {
+              "type": "string",
+              "id": 1
+            },
+            "b": {
+              "type": "string",
+              "id": 2
+            },
+            "c": {
+              "type": "ZtLiveCommonModelProto",
+              "id": 3
+            },
+            "d": {
+              "type": "float",
+              "id": 4
+            }
+          }
+        },
+        "ZtLiveCommonModelProto": {
+          "values": {
+            "ZtLiveCommonModelProtoA": 0,
+            "ZtLiveCommonModelProtoB": 1,
+            "ZtLiveCommonModelProtoC": 2
+          }
+        },
         "ChatMediaType": {
           "values": {
             "UNKNOWN": 0,
             "AUDIO": 1,
             "VIDEO": 2
+          }
+        },
+        "ClickEvent": {
+          "fields": {
+            "url": {
+              "type": "string",
+              "id": 1
+            },
+            "urlType": {
+              "type": "ZtLiveCommonModelProto",
+              "id": 2
+            },
+            "heightPercent": {
+              "type": "float",
+              "id": 3
+            }
+          }
+        },
+        "CommentNotice": {
+          "fields": {
+            "a": {
+              "type": "string",
+              "id": 1
+            },
+            "b": {
+              "type": "bytes",
+              "id": 2
+            },
+            "c": {
+              "type": "string",
+              "id": 3
+            },
+            "d": {
+              "rule": "repeated",
+              "type": "ImageCdnNode",
+              "id": 4
+            },
+            "e": {
+              "rule": "repeated",
+              "type": "ImageCdnNode",
+              "id": 5
+            },
+            "f": {
+              "type": "string",
+              "id": 6
+            },
+            "g": {
+              "type": "string",
+              "id": 7
+            },
+            "h": {
+              "type": "Button",
+              "id": 8
+            },
+            "i": {
+              "type": "ClickEvent",
+              "id": 9
+            },
+            "j": {
+              "type": "int32",
+              "id": 10
+            },
+            "k": {
+              "type": "int64",
+              "id": 11
+            },
+            "l": {
+              "type": "int64",
+              "id": 12
+            },
+            "m": {
+              "type": "int32",
+              "id": 13
+            }
           }
         },
         "CommonActionSignalComment": {
@@ -4245,6 +4465,14 @@
                 "handup": {
                   "type": "bool",
                   "id": 4
+                },
+                "pointWidth": {
+                  "type": "int64",
+                  "id": 5
+                },
+                "pointHeight": {
+                  "type": "int64",
+                  "id": 6
                 }
               }
             }
@@ -4289,6 +4517,10 @@
                 "alternativeColor": {
                   "type": "string",
                   "id": 3
+                },
+                "d": {
+                  "type": "string",
+                  "id": 4
                 }
               }
             },
@@ -4301,6 +4533,10 @@
                 "color": {
                   "type": "string",
                   "id": 2
+                },
+                "c": {
+                  "type": "string",
+                  "id": 3
                 }
               }
             },
@@ -4367,6 +4603,34 @@
             }
           }
         },
+        "CommonActionSignalUserShareLive": {
+          "fields": {
+            "userInfo": {
+              "type": "ZtLiveUserInfo",
+              "id": 1
+            },
+            "sharePlatformId": {
+              "type": "int32",
+              "id": 2
+            },
+            "sharePlatformIcon": {
+              "type": "string",
+              "id": 3
+            },
+            "sendTimeMs": {
+              "type": "int64",
+              "id": 4
+            }
+          },
+          "nested": {
+            "unknown": {
+              "values": {
+                "e": 0,
+                "f": 1
+              }
+            }
+          }
+        },
         "CommonNotifySignalCoverAuditResult": {
           "fields": {
             "auditStatus": {
@@ -4390,6 +4654,10 @@
             "reason": {
               "type": "string",
               "id": 1
+            },
+            "b": {
+              "type": "string",
+              "id": 2
             }
           }
         },
@@ -4411,11 +4679,37 @@
             }
           }
         },
+        "CommonNotifySignalRemoveApplyUser": {
+          "fields": {
+            "a": {
+              "type": "int64",
+              "id": 1
+            },
+            "b": {
+              "type": "unknown",
+              "id": 2
+            }
+          },
+          "nested": {
+            "unknown": {
+              "values": {
+                "c": 0,
+                "d": 1,
+                "e": 2,
+                "f": 3
+              }
+            }
+          }
+        },
         "CommonNotifySignalViolationAlert": {
           "fields": {
             "violationContent": {
               "type": "string",
               "id": 1
+            },
+            "b": {
+              "type": "string",
+              "id": 2
             }
           }
         },
@@ -4515,6 +4809,30 @@
             }
           }
         },
+        "CommonStateSignalAuthorPause": {
+          "fields": {
+            "a": {
+              "type": "int64",
+              "id": 1
+            },
+            "b": {
+              "type": "string",
+              "id": 2
+            },
+            "c": {
+              "type": "string",
+              "id": 3
+            }
+          }
+        },
+        "CommonStateSignalAuthorResume": {
+          "fields": {
+            "a": {
+              "type": "int64",
+              "id": 1
+            }
+          }
+        },
         "CommonStateSignalChatAccept": {
           "fields": {
             "chatId": {
@@ -4525,7 +4843,7 @@
               "type": "ChatMediaType",
               "id": 2
             },
-            "arraySignalInfo": {
+            "aryaSignalInfo": {
               "type": "string",
               "id": 3
             }
@@ -4544,6 +4862,10 @@
             "callTimestampMs": {
               "type": "int64",
               "id": 3
+            },
+            "mediaType": {
+              "type": "ChatMediaType",
+              "id": 4
             }
           }
         },
@@ -4556,6 +4878,10 @@
             "endType": {
               "type": "EndType",
               "id": 2
+            },
+            "c": {
+              "type": "BannedInfo",
+              "id": 3
             }
           },
           "nested": {
@@ -4568,7 +4894,28 @@
                 "GUEST_REJECT": 4,
                 "GUEST_TIMEOUT": 5,
                 "GUEST_HEARTBEAT_TIMEOUT": 6,
-                "AUTHOR_HEARTBEAT_TIMEOUT": 7
+                "AUTHOR_HEARTBEAT_TIMEOUT": 7,
+                "PEER_LIVE_STOPPED": 8
+              }
+            },
+            "BannedInfo": {
+              "fields": {
+                "a": {
+                  "type": "string",
+                  "id": 1
+                },
+                "b": {
+                  "type": "string",
+                  "id": 2
+                },
+                "c": {
+                  "type": "string",
+                  "id": 3
+                },
+                "d": {
+                  "type": "string",
+                  "id": 4
+                }
               }
             }
           }
@@ -4602,7 +4949,8 @@
               "values": {
                 "SHOW": 0,
                 "GET_TOKEN": 1,
-                "GRAB": 2
+                "GRAB": 2,
+                "e": 3
               }
             },
             "Redpack": {
@@ -4638,6 +4986,10 @@
                 "settleBeginTime": {
                   "type": "int64",
                   "id": 8
+                },
+                "i": {
+                  "type": "int64",
+                  "id": 9
                 }
               }
             }
@@ -4692,6 +5044,30 @@
                 "FEATURE_STATE_OPEND": 1,
                 "FEATURE_STATE_CLOSED": 2
               }
+            }
+          }
+        },
+        "CommonStateSignalLiveState": {
+          "fields": {
+            "a": {
+              "type": "int32",
+              "id": 1
+            },
+            "b": {
+              "type": "int32",
+              "id": 2
+            },
+            "c": {
+              "type": "string",
+              "id": 3
+            }
+          }
+        },
+        "CommonStateSignalNewApplyUser": {
+          "fields": {
+            "a": {
+              "type": "int64",
+              "id": 1
             }
           }
         },
@@ -4942,9 +5318,17 @@
               "id": 4
             },
             "e": {
-              "type": "int32",
+              "type": "ZtLivePkProto",
               "id": 5
             }
+          }
+        },
+        "ZtLivePkProto": {
+          "values": {
+            "ZtLivePkProtoA": 0,
+            "ZtLivePkProtoB": 1,
+            "ZtLivePkProtoC": 2,
+            "ZtLivePkProtoD": 3
           }
         },
         "CommonStateSignalRecentComment": {
@@ -4953,6 +5337,27 @@
               "rule": "repeated",
               "type": "CommonActionSignalComment",
               "id": 1
+            }
+          }
+        },
+        "CommonStateSignalShoppingCart": {
+          "fields": {
+            "a": {
+              "type": "unknown",
+              "id": 1
+            },
+            "b": {
+              "type": "string",
+              "id": 2
+            }
+          },
+          "nested": {
+            "unknown": {
+              "values": {
+                "c": 0,
+                "d": 1,
+                "e": 2
+              }
             }
           }
         },
@@ -4987,6 +5392,132 @@
             }
           }
         },
+        "CommonStateSignalWidget": {
+          "fields": {
+            "a": {
+              "rule": "repeated",
+              "type": "WidgetItem",
+              "id": 1
+            }
+          }
+        },
+        "WidgetItem": {
+          "fields": {
+            "a": {
+              "type": "int64",
+              "id": 1
+            },
+            "b": {
+              "type": "string",
+              "id": 2
+            },
+            "c": {
+              "type": "int32",
+              "id": 3
+            },
+            "d": {
+              "type": "int64",
+              "id": 4
+            },
+            "e": {
+              "type": "int64",
+              "id": 5
+            },
+            "f": {
+              "type": "WidgetPictureInfo",
+              "id": 6
+            },
+            "g": {
+              "type": "string",
+              "id": 7
+            },
+            "h": {
+              "type": "ZtLiveWidgetProtoA",
+              "id": 8
+            },
+            "i": {
+              "type": "ZtLiveWidgetProtoB",
+              "id": 9
+            },
+            "j": {
+              "type": "WidgetDisplayStyle",
+              "id": 10
+            },
+            "k": {
+              "type": "ZtLiveWidgetProtoC",
+              "id": 11
+            },
+            "l": {
+              "rule": "repeated",
+              "type": "string",
+              "id": 12
+            },
+            "m": {
+              "rule": "repeated",
+              "type": "string",
+              "id": 13
+            },
+            "n": {
+              "type": "int64",
+              "id": 14
+            }
+          }
+        },
+        "WidgetDisplayStyle": {
+          "fields": {
+            "a": {
+              "type": "bool",
+              "id": 1
+            },
+            "b": {
+              "type": "bool",
+              "id": 2
+            }
+          }
+        },
+        "WidgetPictureInfo": {
+          "fields": {
+            "a": {
+              "type": "ImageCdnNode",
+              "id": 1
+            },
+            "b": {
+              "type": "int32",
+              "id": 2
+            },
+            "c": {
+              "type": "int32",
+              "id": 3
+            }
+          }
+        },
+        "ZtLiveWidgetProtoA": {
+          "values": {
+            "ZtLiveWidgetProtoAa": 0,
+            "ZtLiveWidgetProtoAb": 1,
+            "ZtLiveWidgetProtoAc": 2,
+            "ZtLiveWidgetProtoAd": 3,
+            "ZtLiveWidgetProtoAe": 4
+          }
+        },
+        "ZtLiveWidgetProtoB": {
+          "values": {
+            "ZtLiveWidgetProtoBa": 0,
+            "ZtLiveWidgetProtoBb": 1,
+            "ZtLiveWidgetProtoBc": 2,
+            "ZtLiveWidgetProtoBd": 3,
+            "ZtLiveWidgetProtoBe": 4,
+            "ZtLiveWidgetProtoBf": 5
+          }
+        },
+        "ZtLiveWidgetProtoC": {
+          "values": {
+            "ZtLiveWidgetProtoCa": 0,
+            "ZtLiveWidgetProtoCb": 1,
+            "ZtLiveWidgetProtoCc": 2,
+            "ZtLiveWidgetProtoCd": 3
+          }
+        },
         "CommonStateSignalWishSheetCurrentState": {
           "fields": {
             "a": {
@@ -5002,27 +5533,27 @@
           "nested": {
             "WishCurrentState": {
               "fields": {
-                "c": {
+                "a": {
                   "type": "string",
                   "id": 1
                 },
-                "d": {
+                "b": {
                   "type": "int64",
                   "id": 2
                 },
-                "e": {
+                "c": {
                   "type": "int64",
                   "id": 3
                 },
-                "f": {
+                "d": {
                   "type": "int64",
                   "id": 4
                 },
-                "g": {
+                "e": {
                   "type": "string",
                   "id": 5
                 },
-                "h": {
+                "f": {
                   "type": "string",
                   "id": 6
                 }
@@ -5041,6 +5572,91 @@
             "REQUEST_PARAM_INVALID": 6,
             "ROOM_NOT_EXIST_IN_STATE_MANAGER": 7,
             "NEW_LIVE_OPENED": 8
+          }
+        },
+        "KwaiStateSignalEcommerceCart": {
+          "fields": {
+            "a": {
+              "type": "unknown",
+              "id": 1
+            }
+          },
+          "nested": {
+            "unknown": {
+              "values": {
+                "b": 0,
+                "c": 1
+              }
+            }
+          }
+        },
+        "KwaiStateSignalEcommerceCartItemPopup": {
+          "fields": {
+            "a": {
+              "type": "unknown",
+              "id": 1
+            },
+            "b": {
+              "type": "string",
+              "id": 2
+            },
+            "c": {
+              "type": "string",
+              "id": 3
+            },
+            "d": {
+              "type": "string",
+              "id": 4
+            },
+            "e": {
+              "type": "string",
+              "id": 5
+            }
+          },
+          "nested": {
+            "unknown": {
+              "values": {
+                "f": 0,
+                "g": 1
+              }
+            }
+          }
+        },
+        "TopBannerNotice": {
+          "fields": {
+            "a": {
+              "type": "string",
+              "id": 1
+            },
+            "b": {
+              "type": "string",
+              "id": 2
+            },
+            "c": {
+              "type": "string",
+              "id": 3
+            },
+            "d": {
+              "type": "BackgroundStyle",
+              "id": 4
+            },
+            "e": {
+              "type": "int32",
+              "id": 5
+            },
+            "f": {
+              "type": "Button",
+              "id": 6
+            },
+            "g": {
+              "rule": "repeated",
+              "type": "ImageCdnNode",
+              "id": 7
+            },
+            "h": {
+              "type": "int64",
+              "id": 8
+            }
           }
         },
         "ZtLiveActionSignalItem": {
@@ -5189,14 +5805,6 @@
             }
           }
         },
-        "ZtLivePkProto": {
-          "values": {
-            "d": 0,
-            "e": 1,
-            "f": 2,
-            "g": 3
-          }
-        },
         "ZtLiveScActionSignal": {
           "fields": {
             "item": {
@@ -5303,6 +5911,10 @@
                 "banReason": {
                   "type": "string",
                   "id": 1
+                },
+                "b": {
+                  "type": "string",
+                  "id": 2
                 }
               }
             }
@@ -5310,6 +5922,12 @@
         },
         "ZtLiveScTicketInvalid": {
           "fields": {}
+        },
+        "ZtLiveStartPlaySourceTypeProto": {
+          "values": {
+            "ZtLiveStartPlaySourceTypeProtoA": 0,
+            "ZtLiveStartPlaySourceTypeProtoB": 1
+          }
         }
       }
     }

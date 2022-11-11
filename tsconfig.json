@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "es2020",
+    "lib": ["es2020", "dom"],
+    "module": "commonjs",
+    "noImplicitAny": true,
+    "declaration": true,
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "strict": true,
+    "rootDir": "."
+  },
+  "include": [
+    "handler"
+  ],
+  "files": [
+    "client.ts",
+    "index.ts",
+    "tools.ts",
+    "proto.ts",
+    "types.ts"
+  ]
+}

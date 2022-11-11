@@ -3,20 +3,20 @@
  * @LastEditors: kanoyami
  * @LastEditTime: 2020-09-14 17:58:53
  */
-const cookie = require("cookie");
-const got = require("got");
+import cookie from "cookie";
+import got from "got";
+import querystring from "querystring";
+import { isArray } from "lodash";
 const acConfig = require("./config/config.json");
 const acUrl = require("./config/url_set.json");
-const querystring = require("querystring");
-const { isArray } = require("lodash");
 
 const getDid = async () => {
   const res = await got(acUrl.acfun_login_main);
-  let did_cookie = cookie.parse(res.headers["set-cookie"][1]);
+  let did_cookie = cookie.parse(res.headers["set-cookie"]![1]);
   return did_cookie._did;
 };
 
-const visitorlogin = async (did) => {
+const visitorlogin = async (did: string) => {
   const res = await got("https://id.app.acfun.cn/rest/app/visitor/login", {
     method: "POST",
     headers: {
@@ -36,11 +36,7 @@ const visitorlogin = async (did) => {
   }
 };
 
-const userlogin = async (did, users) => {
-  if (!isArray(users)) {
-    users = [users]
-  }
-  const user = users[Math.floor(Math.random() * 10000) % users.length]
+const userlogin = async (did: string, user: any) => {
   const res = await got(acUrl.acfunSignInURL + "?" + querystring.stringify(
     user,
     "&",
@@ -48,15 +44,15 @@ const userlogin = async (did, users) => {
     headers: {
       cookie: "_did=" + did,
     },
-    from: user,
+    // from: user,
     method: "POST",
   });
   const resJson = JSON.parse(res.body)
   if (resJson.result != 0) {
     throw new Error(resJson.result);
   }
-  let acPasstoken = cookie.parse(res.headers["set-cookie"][0]).acPasstoken;
-  let auth_key = cookie.parse(res.headers["set-cookie"][1]).auth_key;
+  let acPasstoken = cookie.parse(res.headers["set-cookie"]![0]).acPasstoken;
+  let auth_key = cookie.parse(res.headers["set-cookie"]![1]).auth_key;
   const resLogin = await got("https://id.app.acfun.cn/rest/web/token/get?sid=acfun.midground.api", {
     method: "POST",
     headers: {
@@ -74,7 +70,7 @@ const userlogin = async (did, users) => {
 
 }
 
-const startPlayInfoByLogin = async (did, userId, apist, author_id) => {
+const startPlayInfo = async (did: any, userId: any, st: any, author_id: any, isLogin: any) => {
   const startPlayUrl =
     acUrl.acfun_kuaishou_zt_startplay +
     querystring.stringify(
@@ -84,7 +80,7 @@ const startPlayInfoByLogin = async (did, userId, apist, author_id) => {
         userId: userId,
         did: did,
         kpf: acConfig.kuaishou.kpf,
-        "acfun.midground.api_st": apist,
+        [isLogin ? acConfig.acfun_userSt_name : acConfig.acfun_visitorSt_name]: st,
       },
       "&",
       "="
@@ -103,51 +99,10 @@ const startPlayInfoByLogin = async (did, userId, apist, author_id) => {
   if (resJson.result != 1) {
     throw new Error(resJson.result);
   }
-  return {
-    liveId: resJson.data["liveId"],
-    availableTickets: resJson.data["availableTickets"],
-    enterRoomAttach: resJson.data["enterRoomAttach"],
-  };
+  return resJson.data;
 };
 
-const startPlayInfoByVisitor = async (did, userId, st, author_id) => {
-  const startPlayUrl =
-    acUrl.acfun_kuaishou_zt_startplay +
-    querystring.stringify(
-      {
-        subBiz: acConfig.kuaishou.subBiz,
-        kpn: acConfig.kuaishou.kpn,
-        userId: userId,
-        did: did,
-        kpf: acConfig.kuaishou.kpf,
-        [acConfig.acfun_visitorSt_name]: st,
-      },
-      "&",
-      "="
-    );
-  const res = await got(startPlayUrl, {
-    method: "POST",
-    headers: {
-      Referer: acUrl.acfun_live + author_id,
-    },
-    form: {
-      authorId: author_id,
-      pullStreamType: "FLV",
-    },
-  });
-  const resJson = JSON.parse(res.body);
-  if (resJson.result != 1) {
-    throw new Error(resJson.result);
-  }
-  return {
-    liveId: resJson.data["liveId"],
-    availableTickets: resJson.data["availableTickets"],
-    enterRoomAttach: resJson.data["enterRoomAttach"],
-  };
-};
-
-
-const getGiftInfoList = async (did, userId, st, liveId, authorId, isLogin) => {
+const getGiftInfoList = async (did: any, userId: any, st: any, liveId: any, authorId: any, isLogin: any) => {
   const getGiftInfoListURL =
     acUrl.get_kuaishou_zt_giftlist +
     querystring.stringify(
@@ -178,4 +133,4 @@ const getGiftInfoList = async (did, userId, st, liveId, authorId, isLogin) => {
   }
   return resJson.data;
 }
-module.exports = { getDid, visitorlogin, startPlayInfoByVisitor, getGiftInfoList, startPlayInfoByLogin, userlogin };
+export default { getDid, visitorlogin, startPlayInfo, getGiftInfoList, userlogin };

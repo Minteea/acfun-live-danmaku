@@ -1,21 +1,27 @@
 {
-  "name": "ac-danmu",
+  "name": "acfun-live-danmaku",
   "version": "0.5.3",
   "description": "acfun直播弹幕获取",
-  "main": "client.js",
+  "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "proto": "pbjs -t json -o protos.bundle.json  ./protos/**/*.proto",
+    "tsc": "tsc -b",
+    "clear": "rimraf *.js *.d.ts handler/**/*.js handler/**/*.d.ts",
+    "test": "npm run clear && ts-node example/index.ts",
+    "build-test": "npm run build && node example/index.js",
+    "build": "npm run clear && npm run tsc",
+    "prepare": "npm run build"
   },
   "keywords": [
     "acfun",
     "danmaku",
     "danmu"
   ],
-  "author": "kanoyami",
+  "author": "Minteea",
   "license": "GPLv3",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kanoyami/ac-danmu.js"
+    "url": "git+https://github.com/Minteea/acfun-live-danmaku"
   },
   "dependencies": {
     "@babel/polyfill": "^7.11.5",
@@ -29,11 +35,11 @@
     "websocket": "^1.0.32"
   },
   "devDependencies": {
-    "@babel/cli": "^7.11.6",
-    "@babel/core": "^7.11.6",
-    "@babel/plugin-proposal-class-properties": "^7.10.4",
-    "@babel/preset-env": "^7.11.5",
+    "@types/cookie": "^0.5.1",
+    "@types/lodash": "^4.14.188",
+    "@types/websocket": "^1.0.5",
     "babel-plugin-transform-decorators-legacy": "^1.3.5",
-    "babel-preset-stage-0": "^6.24.1"
+    "babel-preset-stage-0": "^6.24.1",
+    "typescript": "^4.8.4"
   }
 }
