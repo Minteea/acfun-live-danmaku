@@ -1,268 +1,296 @@
 import ProtoBufJs from "protobufjs";
 import crypto from "crypto";
 
-const acConfig = require("./config/config.json");
-const ROOT = ProtoBufJs.Root.fromJSON(require("./protos.bundle.json"));
+import { config } from "./config";
+import { protoJson } from "./protos.bundle";
+
+export const ROOT = ProtoBufJs.Root.fromJSON(protoJson);
+
 const EncryptionMode = ROOT.lookupEnum("EncryptionMode");
-let base = {
-  genCommand: (command: any, msg: any, ticket: any, liveId: any) => {
-    const ZtLiveCsCmd = ROOT.lookupType("ZtLiveCsCmd");
-    let payload = {
-      cmdType: command,
-      ticket: ticket,
-      liveId: liveId,
-      payload: msg,
-    };
-    let ztLiveCsCmd = ZtLiveCsCmd.create(payload);
-    return ZtLiveCsCmd.encode(ztLiveCsCmd).finish();
-  },
-  genPayload: (seqId: any, retryCount: any, command: any, msg: any) => {
-    const UpstreamPayload = ROOT.lookupType("UpstreamPayload");
-    let payload = {
-      command: command,
-      payloadData: msg,
-      seqId: seqId,
-      retryCount: retryCount,
-      subBiz: acConfig.kuaishou.subBiz,
-    };
-    let upstreamPayload = UpstreamPayload.create(payload);
-    let buffer = UpstreamPayload.encode(upstreamPayload).finish();
-    return buffer;
-  },
-  /**
-   * @argument key {string}
-   */
-  genHeader: (
-    seqId: any,
-    instanceId: any,
-    uid: any,
-    length: any,
-    encryptionMode = EncryptionMode.values.kEncryptionSessionKey,
-    token?: any
-  ) => {
-    const PacketHeader = ROOT.lookupType("PacketHeader");
 
-    let payload: any = {
-      flags: null,
-      encodingType: null,
-      tokenInfo: null,
-      features: [],
-      appId: acConfig.app_id,
+function genCmd(data: {
+  cmdType: any;
+  payload: any;
+  ticket: string;
+  liveId: string;
+}) {
+  const ZtLiveCsCmd = ROOT.lookupType("ZtLiveCsCmd");
+  let ztLiveCsCmd = ZtLiveCsCmd.create(data);
+  return ZtLiveCsCmd.encode(ztLiveCsCmd).finish();
+}
+
+function genPayload(data: {
+  seqId: number;
+  retryCount: number;
+  command: string;
+  payloadData?: any;
+}) {
+  const UpstreamPayload = ROOT.lookupType("UpstreamPayload");
+  let upstreamPayload = UpstreamPayload.create({
+    ...data,
+    subBiz: config.kuaishou.subBiz,
+  });
+  let buffer = UpstreamPayload.encode(upstreamPayload).finish();
+  return buffer;
+}
+
+function genHeader(data: {
+  seqId: number;
+  instanceId: number;
+  uid: number;
+  decodedPayloadLen: number;
+  encryptionMode?: number;
+  tokenInfo?: { tokenType: number; token: any };
+}) {
+  const PacketHeader = ROOT.lookupType("PacketHeader");
+  let packetHeader = PacketHeader.create({
+    encryptionMode: EncryptionMode.values.kEncryptionSessionKey,
+    flags: null,
+    encodingType: null,
+    tokenInfo: null,
+    features: [],
+    appId: config.app_id,
+    kpn: config.kuaishou.kpn,
+    ...data,
+  });
+  let buffer = PacketHeader.encode(packetHeader).finish();
+  return buffer;
+}
+
+function genEnterRoom(enterRoomAttach: any) {
+  const ZtLiveCsEnterRoom = ROOT.lookupType("ZtLiveCsEnterRoom");
+  let payload = {
+    enterRoomAttach: enterRoomAttach,
+    clientLiveSdkVersion: config.client_live_sdk_version,
+  };
+  let ztLiveCsEnterRoom = ZtLiveCsEnterRoom.create(payload);
+  return ZtLiveCsEnterRoom.encode(ztLiveCsEnterRoom).finish();
+}
+
+function genKeepAlive() {
+  const KeepAliveRequest = ROOT.lookupType("KeepAliveRequest");
+  const PresenceStatus = ROOT.lookupEnum("PresenceStatus");
+  const ActiveStatus = ROOT.lookupEnum("ActiveStatus");
+  let payload = {
+    presenceStatus: PresenceStatus.values.kPresenceOnline,
+    appActiveStatus: ActiveStatus.values.kAppInForeground,
+  };
+  let keepAliveRequest = KeepAliveRequest.create(payload);
+  return KeepAliveRequest.encode(keepAliveRequest).finish();
+}
+
+function genRegister(instanceId: number, uid: number) {
+  const RegisterRequest = ROOT.lookupType("RegisterRequest");
+  const PlatformType = ROOT.lookupEnum("DeviceInfo.PlatformType");
+  const PresenceStatus = ROOT.lookupEnum("RegisterRequest.PresenceStatus");
+  const ActiveStatus = ROOT.lookupEnum("RegisterRequest.ActiveStatus");
+  let payload = {
+    appInfo: {
+      appName: config.app_name,
+      sdkVersion: config.sdk_version,
+    },
+    deviceInfo: {
+      platformType: PlatformType.values.H5,
+      deviceModel: "h5",
+      imeiMd5: null,
+    },
+    presenceStatus: PresenceStatus.values.kPresenceOnline,
+    appActiveStatus: ActiveStatus.values.kAppInForeground,
+    instanceId: instanceId,
+    ztCommonInfo: {
+      kpn: config.kuaishou.kpn,
+      kpf: config.kuaishou.kpf,
       uid: uid,
-      instanceId: instanceId,
-      decodedPayloadLen: length,
-      encryptionMode: encryptionMode,
-      kpn: acConfig.kuaishou.kpn,
-      seqId: seqId,
-    };
-    if (encryptionMode === EncryptionMode.values.kEncryptionServiceToken)
-      payload.tokenInfo = { tokenType: 1, token: Buffer.from(token) };
-    let packetHeader = PacketHeader.create(payload);
-    let buffer = PacketHeader.encode(packetHeader).finish();
-    // console.log("header object")
-    // console.log(buffer)
-    // console.log(PacketHeader.decode(buffer))
-    return buffer;
-  },
-  genEnterRoom: (enterRoomAttach: any) => {
-    const ZtLiveCsEnterRoom = ROOT.lookupType("ZtLiveCsEnterRoom");
-    let payload = {
-      enterRoomAttach: enterRoomAttach,
-      clientLiveSdkVersion: acConfig.client_live_sdk_version,
-    };
-    let ztLiveCsEnterRoom = ZtLiveCsEnterRoom.create(payload);
-    return ZtLiveCsEnterRoom.encode(ztLiveCsEnterRoom).finish();
-  },
-  genKeepAlive: () => {
-    const KeepAliveRequest = ROOT.lookupType("KeepAliveRequest");
-    const PresenceStatus = ROOT.lookupEnum("PresenceStatus");
-    const ActiveStatus = ROOT.lookupEnum("ActiveStatus");
-    let payload = {
-      presenceStatus: PresenceStatus.values.kPresenceOnline,
-      appActiveStatus: ActiveStatus.values.kAppInForeground,
-    };
-    let keepAliveRequest = KeepAliveRequest.create(payload);
-    return KeepAliveRequest.encode(keepAliveRequest).finish();
-  },
-  genRegister: (instanceId: any, uid: any) => {
-    const RegisterRequest = ROOT.lookupType("RegisterRequest");
-    const PlatformType = ROOT.lookupEnum("DeviceInfo.PlatformType");
-    const PresenceStatus = ROOT.lookupEnum("RegisterRequest.PresenceStatus");
-    const ActiveStatus = ROOT.lookupEnum("RegisterRequest.ActiveStatus");
-    let payload = {
-      appInfo: {
-        appName: acConfig.app_name,
-        sdkVersion: acConfig.sdk_version,
-      },
-      deviceInfo: {
-        platformType: PlatformType.values.H5,
-        deviceModel: "h5",
-        imeiMd5: null,
-      },
-      presenceStatus: PresenceStatus.values.kPresenceOnline,
-      appActiveStatus: ActiveStatus.values.kAppInForeground,
-      instanceId: instanceId,
-      ztCommonInfo: {
-        kpn: acConfig.kuaishou.kpn,
-        kpf: acConfig.kuaishou.kpf,
-        uid: uid,
-      },
-    };
-    let register = RegisterRequest.create(payload);
-    let buffer = RegisterRequest.encode(register).finish();
-    // console.log("register object")
-    // console.log(RegisterRequest.decode(buffer))
-    return buffer;
-  },
-  genHeartbeat: (seqId: any) => {
-    const ZtLiveCsHeartbeat = ROOT.lookupType("ZtLiveCsHeartbeat");
-    let payload = {
-      clientTimestampMs: new Date().getTime(),
-      sequence: seqId,
-    };
-    let ztLiveCsHeartbeat = ZtLiveCsHeartbeat.create(payload);
-    return ZtLiveCsHeartbeat.encode(ztLiveCsHeartbeat).finish();
-  },
-  encode: (header: any, body: any, key: any) => {
-    // console.log(UpstreamPayload.decode(body))
-    //console.log(body.length)
-    const iv = crypto.randomBytes(16);
-    let keyBuffer = Buffer.from(key, "base64");
-    let cipher = crypto.createCipheriv("AES-128-CBC", keyBuffer, iv, {});
-    cipher.setAutoPadding(true);
-    let encrypted = Buffer.concat([cipher.update(body), cipher.final()]);
-    // console.log(encrypted.length)
-    let headerSize = header.length;
-    let bodySize = encrypted.length;
-    // console.log(bodySize)
-    let s1 = Buffer.from([0xab, 0xcd, 0x00, 0x01]);
-    let s2 = Buffer.alloc(4);
-    let s3 = Buffer.alloc(4);
-    s2.writeInt32BE(headerSize);
-    s3.writeInt32BE(bodySize + 16);
-    // console.log(header.toString("base64"))
-    // console.log(iv.toString("base64"))
-    // console.log(encrypted.toString("base64"))
-    // console.log(ss.toString("base64"))
-    let r = Buffer.concat([s1, s2, s3, header, iv, encrypted]);
-    //console.log(r.slice(12 + headerSize, 28 + headerSize))
-    // console.log(r.slice(28 + headerSize, r.length))
-    // console.log(encrypted)
-    return r;
-  },
-};
+    },
+  };
+  let register = RegisterRequest.create(payload);
+  let buffer = RegisterRequest.encode(register).finish();
+  // console.log("register object")
+  // console.log(RegisterRequest.decode(buffer))
+  return buffer;
+}
 
-export default {
-  decrypt: (buffer: any, key: any) => {
-    try {
-      let headersize = buffer.readInt32BE(4);
-      let keyBuffer = Buffer.from(key, "base64");
-      let ivBuffer = buffer.slice(12 + headersize, 28 + headersize);
-      if(ivBuffer.length!=16){
-        return false
-      }
-      let bodyBuffer = buffer.slice(28 + headersize);
-      let decipher = crypto.createDecipheriv("AES-128-CBC", keyBuffer, ivBuffer)
-      return Buffer.concat([decipher.update(bodyBuffer), decipher.final()]);
-    } catch (error) {
-      console.log(error)
-      return 
-    }
+function genHeartbeat(seqId: number) {
+  const ZtLiveCsHeartbeat = ROOT.lookupType("ZtLiveCsHeartbeat");
+  let payload = {
+    clientTimestampMs: new Date().getTime(),
+    sequence: seqId,
+  };
+  let ztLiveCsHeartbeat = ZtLiveCsHeartbeat.create(payload);
+  return ZtLiveCsHeartbeat.encode(ztLiveCsHeartbeat).finish();
+}
 
-  },
-  decodeHeader: (buffer: any) => {
-    const PacketHeader = ROOT.lookupType("PacketHeader");
+function encode(header: Uint8Array, body: Uint8Array, key: string) {
+  // console.log(UpstreamPayload.decode(body))
+  //console.log(body.length)
+  const iv = crypto.randomBytes(16);
+  let keyBuffer = Buffer.from(key, "base64");
+  let cipher = crypto.createCipheriv("AES-128-CBC", keyBuffer, iv, {});
+  cipher.setAutoPadding(true);
+  let encrypted = Buffer.concat([cipher.update(body), cipher.final()]);
+  let headerSize = header.length;
+  let bodySize = encrypted.length;
+  let s1 = Buffer.from([0xab, 0xcd, 0x00, 0x01]);
+  let s2 = Buffer.alloc(4);
+  let s3 = Buffer.alloc(4);
+  s2.writeInt32BE(headerSize);
+  s3.writeInt32BE(bodySize + 16);
+  let r = Buffer.concat([s1, s2, s3, header, iv, encrypted]);
+  return r;
+}
+
+export function decrypt(buffer: Buffer, key: string) {
+  try {
     let headersize = buffer.readInt32BE(4);
-    let header = buffer.slice(12, 12 + headersize);
-    return PacketHeader.decode(header);
-  },
-  genPushMessagePack: (seqId: any, instanceId: any, uid: any, key: any) => {
-    let payload = base.genPayload(
+    let keyBuffer = Buffer.from(key, "base64");
+    let ivBuffer = buffer.slice(12 + headersize, 28 + headersize);
+    if (ivBuffer.length != 16) {
+      return false;
+    }
+    let bodyBuffer = buffer.slice(28 + headersize);
+    let decipher = crypto.createDecipheriv("AES-128-CBC", keyBuffer, ivBuffer);
+    return Buffer.concat([decipher.update(bodyBuffer), decipher.final()]);
+  } catch (error) {
+    console.log(error);
+    return;
+  }
+}
+export function decodeHeader(buffer: Buffer) {
+  const PacketHeader = ROOT.lookupType("PacketHeader");
+  let headersize = buffer.readInt32BE(4);
+  let header = buffer.slice(12, 12 + headersize);
+  return PacketHeader.decode(header);
+}
+
+export function genPushMessagePack(
+  seqId: number,
+  instanceId: number,
+  uid: number,
+  key: string
+) {
+  let payload = genPayload({
+    seqId,
+    retryCount: 1,
+    command: "Push.ZtLiveInteractive.Message",
+  });
+  return encode(
+    genHeader({ seqId, instanceId, uid, decodedPayloadLen: payload.length }),
+    payload,
+    key
+  );
+}
+
+export function genHeartbeatPack(
+  seqId: number,
+  instanceId: number,
+  uid: number,
+  key: string,
+  ticket: string,
+  liveId: string
+) {
+  let heartbeatBody = genHeartbeat(seqId);
+  let cmd = genCmd({
+    cmdType: "ZtLiveCsHeartbeat",
+    payload: heartbeatBody,
+    ticket,
+    liveId,
+  });
+  let payload = genPayload({
+    seqId,
+    retryCount: 1,
+    command: "Global.ZtLiveInteractive.CsCmd",
+    payloadData: cmd,
+  });
+  return encode(
+    genHeader({ seqId, instanceId, uid, decodedPayloadLen: payload.length }),
+    payload,
+    key
+  );
+}
+
+export function genEnterRoomPack(
+  seqId: number,
+  instanceId: number,
+  uid: number,
+  key: string,
+  enterRoomAttach: string,
+  ticket: string,
+  liveId: string
+) {
+  let enterRoom = genEnterRoom(enterRoomAttach);
+  let enterRoomCmd = genCmd({
+    cmdType: "ZtLiveCsEnterRoom",
+    payload: enterRoom,
+    ticket,
+    liveId,
+  });
+  let enterRoomBody = genPayload({
+    seqId,
+    retryCount: 1,
+    command: "Global.ZtLiveInteractive.CsCmd",
+    payloadData: enterRoomCmd,
+  });
+  return encode(
+    genHeader({
       seqId,
-      1,
-      "Push.ZtLiveInteractive.Message",
-      null
-    );
-    return base.encode(
-      base.genHeader(seqId, instanceId, uid, payload.length),
-      payload,
-      key
-    );
-  },
-  genHeartbeatPack: (seqId: any, instanceId: any, uid: any, key: any, ticket: any, liveId: any) => {
-    let heartbeatBody = base.genHeartbeat(seqId);
-    let cmd = base.genCommand(
-      "ZtLiveCsHeartbeat",
-      heartbeatBody,
-      ticket,
-      liveId
-    );
-    let payload = base.genPayload(
+      instanceId,
+      uid,
+      decodedPayloadLen: enterRoomBody.length,
+    }),
+    enterRoomBody,
+    key
+  );
+}
+
+export function genRegisterPack(
+  seqId: number,
+  instanceId: number,
+  uid: number,
+  key: string,
+  token: string
+) {
+  let register = genRegister(instanceId, uid);
+  let registerBody = genPayload({
+    seqId,
+    retryCount: 1,
+    command: "Basic.Register",
+    payloadData: register,
+  });
+  return encode(
+    genHeader({
       seqId,
-      1,
-      "Global.ZtLiveInteractive.CsCmd",
-      cmd
-    );
-    return base.encode(
-      base.genHeader(seqId, instanceId, uid, payload.length),
-      payload,
-      key
-    );
-  },
-  genEnterRoomPack: (
-    seqId: any,
-    instanceId: any,
-    uid: any,
-    key: any,
-    enterRoomAttach: any,
-    ticket: any,
-    liveId: any
-  ) => {
-    let enterRoom = base.genEnterRoom(enterRoomAttach);
-    let enterRoomCmd = base.genCommand(
-      "ZtLiveCsEnterRoom",
-      enterRoom,
-      ticket,
-      liveId
-    );
-    let enterRoomBody = base.genPayload(
+      instanceId,
+      uid,
+      decodedPayloadLen: registerBody.length,
+      encryptionMode: EncryptionMode.values.kEncryptionServiceToken,
+      tokenInfo: { tokenType: 1, token: Buffer.from(token!) },
+    }),
+    registerBody,
+    key
+  );
+}
+
+export function genKeepAlivePack(
+  seqId: number,
+  instanceId: number,
+  uid: number,
+  key: string
+) {
+  let keepAlive = genKeepAlive();
+  let keepAliveBody = genPayload({
+    seqId,
+    retryCount: 1,
+    command: "Basic.KeepAlive",
+    payloadData: keepAlive,
+  });
+  return encode(
+    genHeader({
       seqId,
-      1,
-      "Global.ZtLiveInteractive.CsCmd",
-      enterRoomCmd
-    );
-    let bodySize = enterRoomBody.length;
-    return base.encode(
-      base.genHeader(seqId, instanceId, uid, bodySize),
-      enterRoomBody,
-      key
-    );
-  },
-  genRegisterPack: (seqId: any, instanceId: any, uid: any, key: any, token: any) => {
-    let register = base.genRegister(instanceId, uid);
-    let registerBody = base.genPayload(seqId, 1, "Basic.Register", register);
-    let bodySize = registerBody.length;
-    return base.encode(
-      base.genHeader(
-        seqId,
-        instanceId,
-        uid,
-        bodySize,
-        EncryptionMode.values.kEncryptionServiceToken,
-        token
-      ),
-      registerBody,
-      key
-    );
-  },
-  genKeepAlivePack: (seqId: any, instanceId: any, uid: any, key: any) => {
-    let keepAlive = base.genKeepAlive();
-    let keepAliveBody = base.genPayload(seqId, 1, "Basic.KeepAlive", keepAlive);
-    let bodySize = keepAliveBody.length;
-    return base.encode(
-      base.genHeader(seqId, instanceId, uid, bodySize),
-      keepAliveBody,
-      key
-    );
-  },
-};
+      instanceId,
+      uid,
+      decodedPayloadLen: keepAliveBody.length,
+    }),
+    keepAliveBody,
+    key
+  );
+}

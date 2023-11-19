@@ -1,131 +1,173 @@
-import cookie from "cookie";
-import got from "got";
-import querystring from "querystring";
-import { isArray } from "lodash";
-const acConfig = require("./config/config.json");
-const acUrl = require("./config/url_set.json");
+import { url, config, USER_AGENT } from "./config";
 
-const getDid = async () => {
-  const res = await got(acUrl.acfun_login_main);
-  let did_cookie = cookie.parse(res.headers["set-cookie"]![1]);
-  return did_cookie._did;
-};
+/** 从Headers获取cookie */
+export function getSetCookie(headers: Headers) {
+  const cookie: Record<string, string> = {};
+  headers.forEach((val, key) => {
+    if (key == "set-cookie") {
+      const coo = val.split(";")[0].split("=");
+      const key = coo[0]?.trim();
+      const value = coo[1]?.trim();
+      cookie[key] = value;
+    }
+  });
+  return cookie;
+}
 
-const visitorlogin = async (did: string) => {
-  const res = await got("https://id.app.acfun.cn/rest/app/visitor/login", {
+/** 获取字符串 */
+export function queryStringify(data: Record<string, any>) {
+  const query = [];
+  for (const k in data) {
+    query.push(`${k}=${data[k]}`);
+  }
+  return "?" + query.join("&");
+}
+
+export async function getDid() {
+  const res = await fetch(url.LOGIN);
+  const cookie = getSetCookie(res.headers);
+  return cookie._did;
+}
+
+export async function visitorLogin(did: string) {
+  const res = await fetch(url.VISITOR_LOGIN, {
     method: "POST",
+    body: `sid=${config.acfun_visitor_sid}`,
     headers: {
-      cookie: "_did=" + did,
-    },
-    form: {
-      sid: acConfig.acfun_visitor_sid,
+      Cookie: "_did=" + did,
+      "Content-Type": "application/x-www-form-urlencoded",
     },
   });
-  const resJson = JSON.parse(res.body);
-  if (resJson.result == 0) {
+  const data = await res.json();
+  if (data.result == 0) {
     return {
-      acSecurity: resJson["acSecurity"],
-      visitorSt: resJson[acConfig.acfun_visitorSt_name],
-      userId: resJson["userId"],
+      acSecurity: data["acSecurity"],
+      visitorSt: data[config.acfun_visitorSt_name],
+      userId: data["userId"],
+    };
+  } else console.log(data);
+}
+
+export async function userLogin(
+  did: string,
+  acPasstoken: string,
+  authKey: string
+) {
+  const res = await fetch(
+    "https://id.app.acfun.cn/rest/web/token/get?sid=acfun.midground.api",
+    {
+      method: "POST",
+      headers: {
+        Cookie: `_did=${did};acPasstoken=${acPasstoken};auth_key=${authKey}`,
+      },
+    }
+  );
+  const data = await res.json();
+  if (data.result == 0) {
+    return {
+      acSecurity: data["ssecurity"],
+      visitorSt: data["acfun.midground.api_st"],
+      userId: data["userId"],
     };
   }
-};
+}
 
-const userlogin = async (did: string, user: any) => {
-  const res = await got(acUrl.acfunSignInURL + "?" + querystring.stringify(
-    user,
-    "&",
-    "="), {
+export async function userSignIn(did: string, user: any) {
+  const res = await fetch(url.SIGN_IN + queryStringify(user), {
     headers: {
-      cookie: "_did=" + did,
+      Cookie: "_did=" + did,
+      credentials: "include",
     },
     // from: user,
     method: "POST",
   });
-  const resJson = JSON.parse(res.body)
-  if (resJson.result != 0) {
-    throw new Error(resJson.result);
+  const data = await res.json();
+  if (data.result != 0) {
+    throw new Error(data.result);
   }
-  let acPasstoken = cookie.parse(res.headers["set-cookie"]![0]).acPasstoken;
-  let auth_key = cookie.parse(res.headers["set-cookie"]![1]).auth_key;
-  const resLogin = await got("https://id.app.acfun.cn/rest/web/token/get?sid=acfun.midground.api", {
-    method: "POST",
-    headers: {
-      cookie: `_did=${did};acPasstoken=${acPasstoken};auth_key=${auth_key}`,
-    }
-  });
-  const resLoginJson = JSON.parse(resLogin.body);
-  if (resLoginJson.result == 0) {
-    return {
-      acSecurity: resLoginJson["ssecurity"],
-      visitorSt: resLoginJson["acfun.midground.api_st"],
-      userId: resLoginJson["userId"],
-    };
-  }
-
+  const cookie = getSetCookie(res.headers);
+  return {
+    acPasstoken: cookie.acPasstoken,
+    authKey: cookie.auth_key,
+  };
 }
 
-const startPlayInfo = async (did: any, userId: any, st: any, author_id: any, isLogin: any) => {
+/** 获取开播信息 */
+export async function getStartPlayInfo({
+  did,
+  userId,
+  st,
+  authorId,
+  isLogin,
+}: {
+  did: string;
+  userId: number;
+  st: string;
+  authorId: number;
+  isLogin?: boolean;
+}) {
   const startPlayUrl =
-    acUrl.acfun_kuaishou_zt_startplay +
-    querystring.stringify(
-      {
-        subBiz: acConfig.kuaishou.subBiz,
-        kpn: acConfig.kuaishou.kpn,
-        userId: userId,
-        did: did,
-        kpf: acConfig.kuaishou.kpf,
-        [isLogin ? acConfig.acfun_userSt_name : acConfig.acfun_visitorSt_name]: st,
-      },
-      "&",
-      "="
-    );
-  const res = await got(startPlayUrl, {
+    url.START_PLAY +
+    queryStringify({
+      subBiz: config.kuaishou.subBiz,
+      kpn: config.kuaishou.kpn,
+      userId: userId,
+      did: did,
+      kpf: config.kuaishou.kpf,
+      [isLogin ? config.acfun_userSt_name : config.acfun_visitorSt_name]: st,
+    });
+  const res = await fetch(startPlayUrl, {
     method: "POST",
     headers: {
-      Referer: acUrl.acfun_live + author_id,
+      Referer: url.LIVE + authorId,
+      "Content-Type": "application/x-www-form-urlencoded",
     },
-    form: {
-      authorId: author_id,
-      pullStreamType: "FLV",
-    },
+    body: `authorId=${authorId}&pullStreamType=FLV`,
   });
-  const resJson = JSON.parse(res.body);
-  if (resJson.result != 1) {
-    throw new Error(resJson.result);
+  const data = await res.json();
+  if (data.result != 1) {
+    throw data;
   }
-  return resJson.data;
-};
-
-const getGiftInfoList = async (did: any, userId: any, st: any, liveId: any, authorId: any, isLogin: any) => {
-  const getGiftInfoListURL =
-    acUrl.get_kuaishou_zt_giftlist +
-    querystring.stringify(
-      {
-        subBiz: acConfig.kuaishou.subBiz,
-        kpn: acConfig.kuaishou.kpn,
-        userId: userId,
-        did: did,
-        kpf: acConfig.kuaishou.kpf,
-        [isLogin ? acConfig.acfun_userSt_name : acConfig.acfun_visitorSt_name]: st,
-      },
-      "&",
-      "="
-    );
-  const res = await got(getGiftInfoListURL, {
-    method: "POST",
-    headers: {
-      Referer: acUrl.acfun_live + authorId,
-    },
-    form: {
-      "visitorId": userId,
-      "liveId": liveId
-    },
-  });
-  const resJson = JSON.parse(res.body);
-  if (resJson.result != 1) {
-    throw new Error(resJson.result);
-  }
-  return resJson.data;
+  return data.data;
 }
-export default { getDid, visitorlogin, startPlayInfo, getGiftInfoList, userlogin };
+
+/** 获取礼物列表 */
+export async function getGiftInfoList({
+  did,
+  userId,
+  st,
+  authorId,
+  liveId,
+  isLogin,
+}: {
+  did: string;
+  userId: number;
+  st: string;
+  authorId: number;
+  liveId: string;
+  isLogin?: boolean;
+}) {
+  const getGiftInfoListURL =
+    url.GIFT_LIST +
+    queryStringify({
+      subBiz: config.kuaishou.subBiz,
+      kpn: config.kuaishou.kpn,
+      userId: userId,
+      did: did,
+      kpf: config.kuaishou.kpf,
+      [isLogin ? config.acfun_userSt_name : config.acfun_visitorSt_name]: st,
+    });
+  const res = await fetch(getGiftInfoListURL, {
+    method: "POST",
+    headers: {
+      Referer: url.LIVE + authorId,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: `visitorId=${userId}&liveId=${liveId}`,
+  });
+  const data = await res.json();
+  if (data.result != 1) {
+    throw data;
+  }
+  return data.data;
+}

@@ -1,4 +1,4 @@
-{
+export const protoJson = {
   "nested": {
     "AcFunDanmu": {
       "nested": {

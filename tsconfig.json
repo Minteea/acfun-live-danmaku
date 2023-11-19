@@ -10,14 +10,6 @@
     "strict": true,
     "rootDir": "."
   },
-  "include": [
-    "handler"
-  ],
-  "files": [
-    "client.ts",
-    "index.ts",
-    "tools.ts",
-    "proto.ts",
-    "types.ts"
-  ]
+  "include": ["handler", "handler.ts"],
+  "files": ["client.ts", "index.ts", "tools.ts", "proto.ts", "types.ts"]
 }

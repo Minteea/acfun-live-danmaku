@@ -1,61 +1,74 @@
-import AcClient from "./client";
-import tools from "./tools"
+import { AcClient } from "./client";
+import {
+  getStartPlayInfo,
+  getGiftInfoList,
+  userLogin,
+  getDid,
+  visitorLogin,
+  userSignIn,
+} from "./tools";
+import { LoginInfo } from "./types";
 
-export = async function (
-  authorId: string | number,
+export async function getAcClient(
+  authorId: number,
   option?: {
-    login: boolean,
-    userinfo: {
-      username: string,
-      password: string
-    }
+    login: boolean;
+    userinfo: { username: string; password: string };
   }
 ) {
-  const did = await tools.getDid();
+  const did = await getDid();
 
   // 获取登录信息(登录用户/访客)
   if (option?.login && !option.userinfo) {
-    throw new Error("must pass userinfo by using login mode")
+    throw new Error("must pass userinfo by using login mode");
   }
-  const loginInfo = option?.login ?
-    await tools.userlogin(did, option.userinfo).catch((err: any) => {
-      console.log("error:"+err.message)
-      return
-    }) : 
-    await tools.visitorlogin(did).catch((err: any) => {
-      console.log("error:"+err.message)
-      return
-    });
-  if (!loginInfo) return  // 获取登录信息失败/主播未开播
+  let loginInfo: LoginInfo;
+  if (option?.login) {
+    const { acPasstoken, authKey } = await userSignIn(did, option.userinfo);
+    loginInfo = (await userLogin(did, acPasstoken, authKey).catch(
+      (err: any) => {
+        console.log("error:" + err.message);
+        throw err;
+      }
+    ))!;
+  } else {
+    loginInfo = (await visitorLogin(did).catch((err: any) => {
+      console.log("error:" + err.message);
+      throw err;
+    }))!;
+  }
+  console.log(loginInfo);
   // 获取直播基本信息
-  const liveInfo = await tools.startPlayInfo(
+  const liveInfo = await getStartPlayInfo({
     did,
-    loginInfo.userId,
-    loginInfo.visitorSt,
+    userId: loginInfo.userId,
+    st: loginInfo.visitorSt,
     authorId,
-    option?.login
-  ).catch((err: any) => {
-    console.log("error:"+err.message)
-    return
+    isLogin: option?.login,
+  }).catch((err: any) => {
+    console.log("error:" + err.message);
+    throw err;
   });
-  if (!liveInfo) return   // 获取播放信息失败/主播未开播
-  const giftListRet = await tools.getGiftInfoList(
+  if (!liveInfo) throw ""; // 获取直播信息失败/主播未开播
+  const giftListRet = await getGiftInfoList({
     did,
-    loginInfo.userId,
-    loginInfo.visitorSt,
-    liveInfo.liveId,
-    authorId,
-    option?.login
-  ).catch((err: any) => {
-    console.log("error:"+err.message)
-    return
+    userId: loginInfo.userId,
+    st: loginInfo.visitorSt,
+    liveId: liveInfo.liveId,
+    authorId: authorId,
+    isLogin: option?.login,
+  }).catch((err: any) => {
+    console.log("error:" + err.message);
+    throw err;
   });
-  const giftList = giftListRet?.giftList || null
+  const giftList = giftListRet?.giftList || null;
 
-  return new AcClient({
-    did,
-    loginInfo,
+  return {
+    client: new AcClient({
+      ...loginInfo,
+      ...liveInfo,
+    }),
     liveInfo,
     giftList,
-  })
+  };
 }

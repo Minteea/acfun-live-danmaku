@@ -1,9 +1,3 @@
-<!--
- * @Date: 2020-09-15 00:30:41
- * @LastEditors: kanoyami
- * @LastEditTime: 2020-10-09 15:50:49
--->
-
 # acfun-live-danmaku
 
 ## 简介
@@ -15,31 +9,26 @@
 
 * 因为使用了buffer所以不能运行在浏览器环境下, 编写使用node v16 lts
 
-### 可实现
-
-* Promise化的使用方式
-* 事件化的使用流程
-
 ### 使用方式
 
 见example
 ``` JavaScript
 const AcClient = require("acfun-live-danmaku")
 
-//使用init(主播房间号)初始化客户端
+// 使用init(主播房间号)初始化客户端
 AcClient("8500263").then(() => {
-    //启动websocket连接
+    // 启动websocket连接
     ac_client.wsStart();
     ac_client.on("EnterRoomAck", () => {
         console.log("Enter room success!");
     });
-    ac_client.on("recent-comment", (commmnets) => {
-        //获得建立连接当前的弹幕列表
-        console.log(commmnets);
+    ac_client.on("recent-comment", (msg) => {
+        // 获得建立连接当前的弹幕列表
+        console.log(msg);
     });
-    ac_client.on("danmaku", (danmaku) => {
-        //收到的弹幕
-        console.log(danmaku);
+    ac_client.on("Comment", (msg) => {
+        // 收到的弹幕
+        console.log(msg);
     });
 });
 ```
@@ -47,21 +36,21 @@ AcClient("8500263").then(() => {
 或者
 
 ``` JavaScript
-const AcClient = require("acfun-live-danmaku")
+const { getAcClient } = require("acfun-live-danmaku")
 
-//使用init(主播房间号)初始化客户端
-ac_client = await AcClient("8500263")
-//启动websocket连接
-ac_client.wsStart();
-ac_client.on("EnterRoomAck", () => {
+// 使用init(主播房间号)初始化客户端
+const { client } = await getAcClient("8500263")
+// 启动websocket连接
+client.wsStart();
+client.on("EnterRoomAck", () => {
     console.log("Enter room success!");
 });
-ac_client.on("RecentComment", (commmnets) => {
-    //获得建立连接当前的弹幕列表
+client.on("RecentComment", (commmnets) => {
+    // 获得建立连接当前的弹幕列表
     console.log(commmnets);
 });
-ac_client.on("Comment", (danmaku) => {
-    //收到的弹幕
+client.on("Comment", (danmaku) => {
+    // 收到的弹幕
     console.log(danmaku);
 });
 ```
@@ -96,18 +85,16 @@ ac_client.on("Comment", (danmaku) => {
 
 | 事件                | 消息                    | payload类型                        |
 |---------------------|-------------------------|------------------------------------|
-| EnterRoomAck                 | 程序进入直播间        | null                               |
+| EnterRoomAck          | 程序进入直播间        | null                              |
 | Comment               | 弹幕                  | CommonActionSignalComment          |
-| Like                  | 点赞                  | CommonActionSignalLike        |
-| ThrowBanana           | ~~投蕉(已弃用)~~      | AcfunActionSignalThrowBanana               |
-| Gift                  | 发送礼物              | CommonActionSignalGift        |
+| Like                  | 点赞                  | CommonActionSignalLike            |
+| Gift                  | 发送礼物              | CommonActionSignalGift            |
 | UserFollowAuthor      | 关注主播              | CommonActionSignalUserFollowAuthor |
+| UserEnterRoom         | 用户进入直播间         | CommonActionSignalUserEnterRoom  |
 | DisplayInfo           | 当前直播间数据状态     | CommonStateSignalDisplayInfo      |
-| CurrentRedpackList    | 不知道                | CommonStateSignalCurrentRedpackList     |
-| RecentComment         | 当前弹幕列表           | CommonActionSignalComment[]        |
+| RecentComment         | 当前弹幕列表           | CommonStateSignalRecentComment   |
 | TopUsers              | 前几名用户的数据       | CommonStateSignalTopUsers        |
-| UserEnterRoom         | 用户进入直播间         | CommonActionSignalUserEnterRoom
-| JoinClub              | 用户加入主播守护团     | AcfunActionSignalJoinClub     |
+| JoinClub              | 用户加入主播守护团     | AcfunActionSignalJoinClub        |
 
 ### 安装
 
