@@ -1,6 +1,6 @@
 save/**/*
 test/**/*
-demo/**/*
+example/**/*
 
 .gitattributes
 
