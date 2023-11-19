@@ -1,4 +1,5 @@
 import { url, config, USER_AGENT } from "./config";
+import { GiftList, LoginInfo, StartPlayInfo } from "./types";
 
 /** 从Headers获取cookie */
 export function getSetCookie(headers: Headers) {
@@ -29,7 +30,7 @@ export async function getDid() {
   return cookie._did;
 }
 
-export async function visitorLogin(did: string) {
+export async function visitorLogin(did: string): Promise<LoginInfo> {
   const res = await fetch(url.VISITOR_LOGIN, {
     method: "POST",
     body: `sid=${config.acfun_visitor_sid}`,
@@ -45,14 +46,14 @@ export async function visitorLogin(did: string) {
       st: data[config.acfun_visitorSt_name],
       userId: data["userId"],
     };
-  } else console.log(data);
+  } else throw data;
 }
 
 export async function userLogin(
   did: string,
   acPasstoken: string,
   authKey: string
-) {
+): Promise<LoginInfo> {
   const res = await fetch(
     "https://id.app.acfun.cn/rest/web/token/get?sid=acfun.midground.api",
     {
@@ -69,7 +70,7 @@ export async function userLogin(
       st: data["acfun.midground.api_st"],
       userId: data["userId"],
     };
-  }
+  } else throw data;
 }
 
 export async function userSignIn(did: string, user: any) {
@@ -103,7 +104,7 @@ export async function getStartPlayInfo({
   userId: number;
   st: string;
   authorId: number;
-}) {
+}): Promise<StartPlayInfo> {
   const startPlayUrl =
     url.START_PLAY +
     queryStringify({
@@ -132,7 +133,7 @@ export async function getStartPlayInfo({
 }
 
 /** 获取礼物列表 */
-export async function getGiftInfoList({
+export async function getGiftList({
   did,
   userId,
   st,
@@ -144,7 +145,7 @@ export async function getGiftInfoList({
   st: string;
   authorId: number;
   liveId: string;
-}) {
+}): Promise<GiftList> {
   const getGiftInfoListURL =
     url.GIFT_LIST +
     queryStringify({
@@ -169,5 +170,5 @@ export async function getGiftInfoList({
   if (data.result != 1) {
     throw data;
   }
-  return data.data;
+  return data.data.giftList;
 }

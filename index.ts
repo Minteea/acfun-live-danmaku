@@ -1,7 +1,7 @@
 import { AcClient } from "./client";
 import {
   getStartPlayInfo,
-  getGiftInfoList,
+  getGiftList,
   userLogin,
   getDid,
   visitorLogin,
@@ -13,18 +13,18 @@ export async function getAcClient(
   authorId: number,
   option?: {
     login: boolean;
-    userinfo: { username: string; password: string };
+    userInfo: { username: string; password: string };
   }
 ) {
   const did = await getDid();
 
   // 获取登录信息(登录用户/访客)
-  if (option?.login && !option.userinfo) {
+  if (option?.login && !option.userInfo) {
     throw new Error("must pass userinfo by using login mode");
   }
   let loginInfo: LoginInfo;
   if (option?.login) {
-    const { acPasstoken, authKey } = await userSignIn(did, option.userinfo);
+    const { acPasstoken, authKey } = await userSignIn(did, option.userInfo);
     loginInfo = (await userLogin(did, acPasstoken, authKey).catch(
       (err: any) => {
         console.log("error:" + err.message);
@@ -49,7 +49,7 @@ export async function getAcClient(
     throw err;
   });
   if (!liveInfo) throw ""; // 获取直播信息失败/主播未开播
-  const giftListRet = await getGiftInfoList({
+  const giftList = await getGiftList({
     did,
     userId: loginInfo.userId,
     st: loginInfo.st,
@@ -59,7 +59,6 @@ export async function getAcClient(
     console.log("error:" + err.message);
     throw err;
   });
-  const giftList = giftListRet?.giftList || null;
 
   return {
     client: new AcClient({
