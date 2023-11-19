@@ -11,22 +11,21 @@
 
 ### 使用方式
 
-见example
 ``` JavaScript
-const AcClient = require("acfun-live-danmaku")
+const { getAcClient } = require("acfun-live-danmaku")
 
 // 使用init(主播房间号)初始化客户端
-AcClient("8500263").then(() => {
+AcClient("8500263").then(({ client }) => {
     // 启动websocket连接
-    ac_client.wsStart();
-    ac_client.on("EnterRoomAck", () => {
+    client.wsStart();
+    client.on("EnterRoomAck", () => {
         console.log("Enter room success!");
     });
-    ac_client.on("recent-comment", (msg) => {
+    client.on("RecentComment", (msg) => {
         // 获得建立连接当前的弹幕列表
         console.log(msg);
     });
-    ac_client.on("Comment", (msg) => {
+    client.on("Comment", (msg) => {
         // 收到的弹幕
         console.log(msg);
     });
