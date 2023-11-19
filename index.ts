@@ -42,9 +42,8 @@ export async function getAcClient(
   const liveInfo = await getStartPlayInfo({
     did,
     userId: loginInfo.userId,
-    st: loginInfo.visitorSt,
+    st: loginInfo.st,
     authorId,
-    isLogin: option?.login,
   }).catch((err: any) => {
     console.log("error:" + err.message);
     throw err;
@@ -53,10 +52,9 @@ export async function getAcClient(
   const giftListRet = await getGiftInfoList({
     did,
     userId: loginInfo.userId,
-    st: loginInfo.visitorSt,
+    st: loginInfo.st,
     liveId: liveInfo.liveId,
     authorId: authorId,
-    isLogin: option?.login,
   }).catch((err: any) => {
     console.log("error:" + err.message);
     throw err;

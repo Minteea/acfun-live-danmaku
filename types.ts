@@ -1,8 +1,8 @@
 /** 登录信息 */
 export interface LoginInfo {
   userId: number;
-  visitorSt: string;
-  acSecurity: string;
+  st: string;
+  security: string;
 }
 /** 直播信息 */
 export interface LiveInfo {

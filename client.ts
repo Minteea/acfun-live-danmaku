@@ -38,8 +38,8 @@ export class WebsocketClient extends EventEmitter {
 
 export class AcClient extends WebsocketClient {
   userId: number;
-  visitorSt: string;
-  acSecurity: string;
+  st: string;
+  security: string;
 
   liveId: string;
   availableTickets: string[];
@@ -58,8 +58,8 @@ export class AcClient extends WebsocketClient {
 
   constructor({
     userId,
-    visitorSt,
-    acSecurity,
+    st,
+    security,
     liveId,
     availableTickets,
     enterRoomAttach,
@@ -67,8 +67,8 @@ export class AcClient extends WebsocketClient {
     super(url.WSS_HOST);
 
     this.userId = userId;
-    this.visitorSt = visitorSt;
-    this.acSecurity = acSecurity;
+    this.st = st;
+    this.security = security;
 
     this.liveId = liveId;
     this.availableTickets = availableTickets;
@@ -80,8 +80,8 @@ export class AcClient extends WebsocketClient {
         this.seqId,
         this.instanceId,
         this.userId,
-        this.acSecurity,
-        this.visitorSt
+        this.security,
+        this.st
       );
       this.send(register);
     });
@@ -128,7 +128,7 @@ export class AcClient extends WebsocketClient {
     let header: any = proto.decodeHeader(buffer);
     const decrypted = proto.decrypt(
       buffer,
-      header.encryptionMode == 1 ? this.acSecurity : this.sessionKey
+      header.encryptionMode == 1 ? this.security : this.sessionKey
     );
     if (!decrypted) {
       return false;

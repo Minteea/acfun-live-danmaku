@@ -41,8 +41,8 @@ export async function visitorLogin(did: string) {
   const data = await res.json();
   if (data.result == 0) {
     return {
-      acSecurity: data["acSecurity"],
-      visitorSt: data[config.acfun_visitorSt_name],
+      security: data["acSecurity"],
+      st: data[config.acfun_visitorSt_name],
       userId: data["userId"],
     };
   } else console.log(data);
@@ -65,8 +65,8 @@ export async function userLogin(
   const data = await res.json();
   if (data.result == 0) {
     return {
-      acSecurity: data["ssecurity"],
-      visitorSt: data["acfun.midground.api_st"],
+      security: data["ssecurity"],
+      st: data["acfun.midground.api_st"],
       userId: data["userId"],
     };
   }
@@ -98,13 +98,11 @@ export async function getStartPlayInfo({
   userId,
   st,
   authorId,
-  isLogin,
 }: {
   did: string;
   userId: number;
   st: string;
   authorId: number;
-  isLogin?: boolean;
 }) {
   const startPlayUrl =
     url.START_PLAY +
@@ -114,7 +112,9 @@ export async function getStartPlayInfo({
       userId: userId,
       did: did,
       kpf: config.kuaishou.kpf,
-      [isLogin ? config.acfun_userSt_name : config.acfun_visitorSt_name]: st,
+      [userId > 0 && userId < 1000000000000000
+        ? config.acfun_userSt_name
+        : config.acfun_visitorSt_name]: st,
     });
   const res = await fetch(startPlayUrl, {
     method: "POST",
@@ -138,14 +138,12 @@ export async function getGiftInfoList({
   st,
   authorId,
   liveId,
-  isLogin,
 }: {
   did: string;
   userId: number;
   st: string;
   authorId: number;
   liveId: string;
-  isLogin?: boolean;
 }) {
   const getGiftInfoListURL =
     url.GIFT_LIST +
@@ -155,7 +153,9 @@ export async function getGiftInfoList({
       userId: userId,
       did: did,
       kpf: config.kuaishou.kpf,
-      [isLogin ? config.acfun_userSt_name : config.acfun_visitorSt_name]: st,
+      [userId > 0 && userId < 1000000000000000
+        ? config.acfun_userSt_name
+        : config.acfun_visitorSt_name]: st,
     });
   const res = await fetch(getGiftInfoListURL, {
     method: "POST",
