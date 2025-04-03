@@ -2,55 +2,40 @@
 
 ## 简介
 
-- acfun-live-danmaku 是基于[ACFUN-FOSS/ac-danmu.js](https://github.com/ACFUN-FOSS/ac-danmu.js)的 Typescript 改进版本，是[orzogc/acfundanmu](https://github.com/orzogc/acfundanmu)的 Nodejs 实现
-- 这些项目的诞生都离不开[wpscott/AcFunDanmaku](https://github.com/wpscott/AcFunDanmaku/tree/master/AcFunDanmu)提供的实现思路和配置文件，请给他们点 Star
+- acfun-live-danmaku 是基于 [ACFUN-FOSS/ac-danmu.js](https://github.com/ACFUN-FOSS/ac-danmu.js) 的 TypeScript 改进版本，在此基础上兼容各种符合现行 ES 标准和 Web API 的运行环境，包括浏览器环境
+- acfun-live-danmaku 和 [ACFUN-FOSS/ac-danmu.js](https://github.com/ACFUN-FOSS/ac-danmu.js) 也是 [orzogc/acfundanmu](https://github.com/orzogc/acfundanmu) 的 JavaScript 实现
+- 这些项目的诞生都离不开 [wpscott/AcFunDanmaku](https://github.com/wpscott/AcFunDanmaku/tree/master/AcFunDanmu) 提供的实现思路和配置文件，请给他们点 Star
 
-## acfun-live-danmaku 是一个用于获取 acfun 直播弹幕的服务端 js 组件
+## acfun-live-danmaku 是一个用于获取 AcFun 直播弹幕的 JavaScript 库
 
-- 因为使用了 buffer 所以不能运行在浏览器环境下, 编写使用 node v16 lts
+- 支持在浏览器环境和 NodeJS 环境下运行, 使用 NodeJS v22 LTS 开发
+
+### 安装
+
+```
+npm i acfun-live-danmaku --save
+```
 
 ### 使用方式
 
 ```JavaScript
-const { getAcClient } = require("acfun-live-danmaku")
+import { getAcClient } from "acfun-live-danmaku"
 
 // 使用init(主播房间号)初始化客户端
 AcClient("8500263").then(({ client }) => {
     // 启动websocket连接
     client.wsStart();
-    client.on("EnterRoomAck", () => {
+    client.addEventListener("EnterRoomAck", () => {
         console.log("Enter room success!");
     });
-    client.on("RecentComment", (msg) => {
+    client.addEventListener("RecentComment", ({ data }) => {
         // 获得建立连接当前的弹幕列表
-        console.log(msg);
+        console.log(data);
     });
-    client.on("Comment", (msg) => {
+    client.addEventListener("Comment", ({ data }) => {
         // 收到的弹幕
-        console.log(msg);
+        console.log(data);
     });
-});
-```
-
-或者
-
-```JavaScript
-const { getAcClient } = require("acfun-live-danmaku")
-
-// 使用init(主播房间号)初始化客户端
-const { client } = await getAcClient("8500263")
-// 启动websocket连接
-client.wsStart();
-client.on("EnterRoomAck", () => {
-    console.log("Enter room success!");
-});
-client.on("RecentComment", (commmnets) => {
-    // 获得建立连接当前的弹幕列表
-    console.log(commmnets);
-});
-client.on("Comment", (danmaku) => {
-    // 收到的弹幕
-    console.log(danmaku);
 });
 ```
 
@@ -103,7 +88,3 @@ client.on("Comment", (danmaku) => {
 | DisplayInfo      | 当前直播间数据状态 | CommonStateSignalDisplayInfo       |
 | RecentComment    | 当前弹幕列表       | CommonStateSignalRecentComment     |
 | TopUsers         | 前几名用户的数据   | CommonStateSignalTopUsers          |
-
-### 安装
-
-`npm i acfun-live-danmaku --save`
