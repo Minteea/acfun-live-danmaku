@@ -1,6 +1,6 @@
 {
   "name": "acfun-live-danmaku",
-  "version": "0.7.3",
+  "version": "0.8.0-alpha.0",
   "description": "acfun直播弹幕获取",
   "main": "index.js",
   "type": "module",
