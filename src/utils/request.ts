@@ -1,5 +1,5 @@
-import { url, config, USER_AGENT } from "./config";
-import { GiftList, LoginInfo, StartPlayInfo } from "./types";
+import { url, config, USER_AGENT } from "../config";
+import { GiftList, LoginInfo, StartPlayInfo } from "../types";
 
 /** 自定义fetch设置 */
 export interface FetchOptions {
