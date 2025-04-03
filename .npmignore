@@ -1,10 +1,15 @@
-save/**/*
 test/**/*
-example/**/*
+demo/**/*
+src/**/*
+
+package-lock.json
+yarn.lock
+tsconfig.json
 
 .gitattributes
 
 *.tgz
+*.tsbuildinfo
 
 # ts源文件
 **/*.ts

@@ -1,5 +1,4 @@
-import ProtoBufJs from "protobufjs";
-import crypto from "crypto";
+import ProtoBufJs, { Long } from "protobufjs";
 
 import { config } from "./config";
 import { protoJson } from "./protos.bundle";
@@ -36,7 +35,7 @@ function genPayload(data: {
 
 function genHeader(data: {
   seqId: number;
-  instanceId: number;
+  instanceId: Long;
   uid: number;
   decodedPayloadLen: number;
   encryptionMode?: number;
@@ -79,7 +78,7 @@ function genKeepAlive() {
   return KeepAliveRequest.encode(keepAliveRequest).finish();
 }
 
-function genRegister(instanceId: number, uid: number) {
+function genRegister(instanceId: bigint | Long, uid: number) {
   const RegisterRequest = ROOT.lookupType("RegisterRequest");
   const PlatformType = ROOT.lookupEnum("DeviceInfo.PlatformType");
   const PresenceStatus = ROOT.lookupEnum("RegisterRequest.PresenceStatus");
@@ -120,51 +119,125 @@ function genHeartbeat(seqId: number) {
   return ZtLiveCsHeartbeat.encode(ztLiveCsHeartbeat).finish();
 }
 
-function encode(header: Uint8Array, body: Uint8Array, key: string) {
-  // console.log(UpstreamPayload.decode(body))
-  //console.log(body.length)
-  const iv = crypto.randomBytes(16);
-  let keyBuffer = Buffer.from(key, "base64");
-  let cipher = crypto.createCipheriv("AES-128-CBC", keyBuffer, iv, {});
-  cipher.setAutoPadding(true);
-  let encrypted = Buffer.concat([cipher.update(body), cipher.final()]);
+function int32ToUint8ArrayBE(n: number): Uint8Array {
+  const buffer = new Uint8Array(4);
+  new DataView(buffer.buffer).setInt32(0, n, false); // Big-endian
+  return buffer;
+}
+
+function concatUint8Arrays(arrs: Uint8Array[]) {
+  // 计算总长度
+  let totalLength = 0;
+  for (const arr of arrs) {
+    if (!(arr instanceof Uint8Array)) {
+      throw new TypeError("All elements must be Uint8Array");
+    }
+    totalLength += arr.length;
+  }
+
+  // 创建新数组
+  const result = new Uint8Array(totalLength);
+
+  // 复制数据
+  let offset = 0;
+  for (const arr of arrs) {
+    result.set(arr, offset);
+    offset += arr.length;
+  }
+
+  return result;
+}
+
+function readInt32BE(buffer: Uint8Array, offset: number): number {
+  return new DataView(buffer.buffer, offset).getInt32(0, false); // Big-endian
+}
+
+export async function encode(
+  header: Uint8Array,
+  body: Uint8Array,
+  key: string
+) {
+  const iv = crypto.getRandomValues(new Uint8Array(16));
+  let keyBuffer = Uint8Array.from(atob(key), (c) => c.charCodeAt(0));
+
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw",
+    keyBuffer,
+    { name: "AES-CBC" },
+    false,
+    ["encrypt"]
+  );
+
+  // 加密数据
+  const encrypted = await crypto.subtle.encrypt(
+    {
+      name: "AES-CBC",
+      iv,
+    },
+    cryptoKey,
+    body
+  );
+
   let headerSize = header.length;
-  let bodySize = encrypted.length;
-  let s1 = Buffer.from([0xab, 0xcd, 0x00, 0x01]);
-  let s2 = Buffer.alloc(4);
-  let s3 = Buffer.alloc(4);
-  s2.writeInt32BE(headerSize);
-  s3.writeInt32BE(bodySize + 16);
-  let r = Buffer.concat([s1, s2, s3, header, iv, encrypted]);
+  let bodySize = encrypted.byteLength;
+  let s1 = new Uint8Array([0xab, 0xcd, 0x00, 0x01]);
+  let s2 = int32ToUint8ArrayBE(headerSize);
+  let s3 = int32ToUint8ArrayBE(bodySize + 16);
+  let r = concatUint8Arrays([
+    s1,
+    s2,
+    s3,
+    header,
+    iv,
+    new Uint8Array(encrypted),
+  ]);
   return r;
 }
 
-export function decrypt(buffer: Buffer, key: string) {
+export async function decrypt(buffer: Uint8Array, key: string) {
   try {
-    let headersize = buffer.readInt32BE(4);
-    let keyBuffer = Buffer.from(key, "base64");
-    let ivBuffer = buffer.slice(12 + headersize, 28 + headersize);
-    if (ivBuffer.length != 16) {
-      return false;
-    }
-    let bodyBuffer = buffer.slice(28 + headersize);
-    let decipher = crypto.createDecipheriv("AES-128-CBC", keyBuffer, ivBuffer);
-    return Buffer.concat([decipher.update(bodyBuffer), decipher.final()]);
+    // 解析报文头
+    let headerSize = readInt32BE(buffer, 4);
+    const ivStart = 12 + headerSize;
+    const ivBuffer = buffer.slice(ivStart, ivStart + 16);
+
+    if (ivBuffer.length !== 16) return null;
+
+    // 准备密钥
+    const keyBuffer = Uint8Array.from(atob(key), (c) => c.charCodeAt(0));
+    const cryptoKey = await crypto.subtle.importKey(
+      "raw",
+      keyBuffer,
+      { name: "AES-CBC" },
+      false,
+      ["decrypt"]
+    );
+
+    let encryptedData = buffer.slice(ivStart + 16);
+    const decrypted = await crypto.subtle.decrypt(
+      {
+        name: "AES-CBC",
+        iv: ivBuffer,
+      },
+      cryptoKey,
+      encryptedData
+    );
+    return new Uint8Array(decrypted);
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return;
   }
 }
-export function decodeHeader(buffer: Buffer) {
+export function decodeHeader(buffer: Uint8Array) {
   const PacketHeader = ROOT.lookupType("PacketHeader");
-  let headersize = buffer.readInt32BE(4);
+  let headersize = readInt32BE(buffer, 4);
   let header = buffer.slice(12, 12 + headersize);
   return PacketHeader.decode(header);
 }
 
 export function genPushMessagePack(
   seqId: number,
-  instanceId: number,
+  instanceId: Long,
   uid: number,
   key: string
 ) {
@@ -182,7 +255,7 @@ export function genPushMessagePack(
 
 export function genHeartbeatPack(
   seqId: number,
-  instanceId: number,
+  instanceId: Long,
   uid: number,
   key: string,
   ticket: string,
@@ -210,7 +283,7 @@ export function genHeartbeatPack(
 
 export function genEnterRoomPack(
   seqId: number,
-  instanceId: number,
+  instanceId: Long,
   uid: number,
   key: string,
   enterRoomAttach: string,
@@ -241,10 +314,11 @@ export function genEnterRoomPack(
     key
   );
 }
+const encoder = new TextEncoder();
 
 export function genRegisterPack(
   seqId: number,
-  instanceId: number,
+  instanceId: Long,
   uid: number,
   key: string,
   token: string
@@ -263,7 +337,7 @@ export function genRegisterPack(
       uid,
       decodedPayloadLen: registerBody.length,
       encryptionMode: EncryptionMode.values.kEncryptionServiceToken,
-      tokenInfo: { tokenType: 1, token: Buffer.from(token!) },
+      tokenInfo: { tokenType: 1, token: encoder.encode(token!) },
     }),
     registerBody,
     key
@@ -272,7 +346,7 @@ export function genRegisterPack(
 
 export function genKeepAlivePack(
   seqId: number,
-  instanceId: number,
+  instanceId: Long,
   uid: number,
   key: string
 ) {

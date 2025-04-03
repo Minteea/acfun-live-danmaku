@@ -1,11 +1,14 @@
 import ProtoBufJs from "protobufjs";
-import { unzip } from "zlib";
-import { promisify } from "util";
-import * as proto from "./proto";
-import { AcClient } from "./client";
+import {
+  genEnterRoomPack,
+  genHeartbeatPack,
+  genKeepAlivePack,
+  genPushMessagePack,
+} from "./proto";
+import { AcClient, DataEvent } from "./client";
 import { ROOT } from "./proto";
-
-const do_unzip = promisify(unzip);
+import { MessageData } from "./types/message";
+import { inflate } from "pako";
 
 export async function commandHandler(client: AcClient, payload: any) {
   switch (payload.command) {
@@ -13,9 +16,12 @@ export async function commandHandler(client: AcClient, payload: any) {
       const RegisterResponse = ROOT.lookupType("RegisterResponse");
       let rr: any = RegisterResponse.decode(payload.payloadData);
       client.instanceId = rr.instanceId;
-      client.sessionKey = rr.sessKey.toString("base64");
+      client.sessionKey = btoa(
+        String.fromCharCode(...(rr.sessKey as Uint8Array))
+      );
+
       client.send(
-        proto.genKeepAlivePack(
+        await genKeepAlivePack(
           client.seqId,
           client.instanceId,
           client.userId,
@@ -23,7 +29,7 @@ export async function commandHandler(client: AcClient, payload: any) {
         )
       );
       client.send(
-        proto.genEnterRoomPack(
+        await genEnterRoomPack(
           client.seqId,
           client.instanceId,
           client.userId,
@@ -51,17 +57,17 @@ export async function commandHandler(client: AcClient, payload: any) {
         "ZtLiveScMessage.CompressionType"
       );
       client.send(
-        proto.genPushMessagePack(
+        await genPushMessagePack(
           client.seqId,
           client.instanceId,
           client.userId,
           client.sessionKey
         )
       );
-      let ztPayload: any = ZtLiveScMessage.decode(payload.payloadData);
+      const ztPayload: any = ZtLiveScMessage.decode(payload.payloadData);
       let msg = ztPayload.payload;
       if (ztPayload.compressionType == CompressionType.values.GZIP)
-        msg = await do_unzip(ztPayload.payload);
+        msg = inflate(ztPayload.payload);
       switch (ztPayload.messageType) {
         case "ZtLiveScActionSignal":
           ActionHandler(client, msg);
@@ -77,31 +83,42 @@ export async function commandHandler(client: AcClient, payload: any) {
             "ZtLiveScStatusChanged"
           );
           const liveStateType = ROOT.lookupEnum("ZtLiveScStatusChanged.Type");
-          let ztLiveScStatusChanged: any = ZtLiveScStatusChanged.decode(
+          let statusChanged = ZtLiveScStatusChanged.decode(
             ztPayload.payload
-          );
-          client.emit("StatusChanged", ztLiveScStatusChanged);
-          switch (ztLiveScStatusChanged.type) {
+          ) as unknown as MessageData.ZtLiveScStatusChanged;
+          const eventInit = {
+            command: payload.command,
+            messageType: ztPayload.messageType,
+            data: statusChanged,
+          };
+          client.dispatchEvent(new DataEvent("StatusChanged", eventInit));
+          switch (statusChanged.type) {
             case liveStateType.values.LIVE_CLOSED: // 直播结束
-              client.emit("LiveClosed", ztLiveScStatusChanged);
+              client.dispatchEvent(new DataEvent("LiveClosed", eventInit));
               break;
             case liveStateType.values.LIVE_BANNED: // 直播间被封禁
-              client.emit("LiveBanned", ztLiveScStatusChanged);
+              client.dispatchEvent(new DataEvent("LiveBanned", eventInit));
               break;
             case liveStateType.values.NEW_LIVE_OPENED: // 开启新直播
-              client.emit("NewLiveOpened", ztLiveScStatusChanged);
+              client.dispatchEvent(new DataEvent("NewLiveOpened", eventInit));
               break;
             case liveStateType.values.LIVE_URL_CHANGED: // 直播url更改
-              client.emit("LiveUrlChanged", ztLiveScStatusChanged);
+              client.dispatchEvent(new DataEvent("LiveUrlChanged", eventInit));
               break;
           }
           break;
         case "ZtLiveScTicketInvalid":
-          console.log("changeKey");
+          client.dispatchEvent(
+            new DataEvent("TicketInvalid", {
+              command: payload.command,
+              messageType: ztPayload.messageType,
+              data: undefined,
+            })
+          );
           client.ticketIndex =
             (client.ticketIndex + 1) / client.availableTickets.length;
           client.send(
-            proto.genEnterRoomPack(
+            await genEnterRoomPack(
               client.seqId,
               client.instanceId,
               client.userId,
@@ -126,11 +143,17 @@ export async function commandHandler(client: AcClient, payload: any) {
             ztLiveCsCmdAck.payload
           );
           //发送进入事件
-          client.emit("EnterRoomAck", enterRoomAck);
+          client.dispatchEvent(
+            new DataEvent("EnterRoomAck", {
+              command: payload.command,
+              cmdAckType: ztLiveCsCmdAck.cmdAckType,
+              data: enterRoomAck,
+            })
+          );
           let ms = enterRoomAck.heartbeatIntervalMs.toNumber() || 1000;
-          client.timer = setInterval(() => {
+          client.timer = setInterval(async () => {
             client.send(
-              proto.genHeartbeatPack(
+              await genHeartbeatPack(
                 client.seqId,
                 client.instanceId,
                 client.userId,
@@ -156,7 +179,9 @@ export function StateHandler(
   client: AcClient,
   buffer: ProtoBufJs.Reader | Uint8Array
 ) {
-  const ZtLiveScStateSignal = ROOT.lookupType("ZtLiveScStateSignal");
+  const command = "Push.ZtLiveInteractive.Message";
+  const messageType = "ZtLiveScStateSignal";
+  const ZtLiveScStateSignal = ROOT.lookupType(messageType);
   let items = (ZtLiveScStateSignal.decode(buffer) as any).item;
   items.forEach(
     ({
@@ -168,10 +193,24 @@ export function StateHandler(
     }) => {
       try {
         let ProtobufType = ROOT.lookupType(signalType);
-        let result = ProtobufType.decode(payload);
-        client.emit("StateSignal", signalType, result);
+        let data = ProtobufType.decode(payload);
+        client.dispatchEvent(
+          new DataEvent("StateSignal", {
+            command,
+            messageType,
+            signalType,
+            data,
+          })
+        );
       } catch (error) {
-        client.emit("StateSignal", signalType);
+        client.dispatchEvent(
+          new DataEvent("StateSignal", {
+            command,
+            messageType,
+            signalType,
+            data: undefined,
+          })
+        );
       }
     }
   );
@@ -181,18 +220,34 @@ export function ActionHandler(
   client: AcClient,
   buffer: ProtoBufJs.Reader | Uint8Array
 ) {
-  const ZtLiveScActionSignal = ROOT.lookupType("ZtLiveScActionSignal");
+  const command = "Push.ZtLiveInteractive.Message";
+  const messageType = "ZtLiveScActionSignal";
+  const ZtLiveScActionSignal = ROOT.lookupType(messageType);
   let items = (ZtLiveScActionSignal.decode(buffer) as any).item;
   items.forEach(
     ({ signalType, payload }: { signalType: string; payload: any[] }) => {
       try {
         let ProtobufType = ROOT.lookupType(signalType);
         payload.forEach((e: ProtoBufJs.Reader | Uint8Array) => {
-          let result = ProtobufType.decode(e);
-          client.emit("ActionSignal", signalType, result);
+          let data = ProtobufType.decode(e);
+          client.dispatchEvent(
+            new DataEvent("ActionSignal", {
+              command,
+              messageType,
+              signalType,
+              data,
+            })
+          );
         });
       } catch (error) {
-        client.emit("ActionSignal", signalType);
+        client.dispatchEvent(
+          new DataEvent("ActionSignal", {
+            command,
+            messageType,
+            signalType,
+            data: undefined,
+          })
+        );
       }
     }
   );
@@ -202,7 +257,9 @@ export function NotifyHandler(
   client: AcClient,
   buffer: ProtoBufJs.Reader | Uint8Array
 ) {
-  const ZtLiveScNotifySignal = ROOT.lookupType("ZtLiveScNotifySignal");
+  const command = "Push.ZtLiveInteractive.Message";
+  const messageType = "ZtLiveScNotifySignal";
+  const ZtLiveScNotifySignal = ROOT.lookupType(messageType);
   let items = (ZtLiveScNotifySignal.decode(buffer) as any).item;
   items.forEach(
     ({
@@ -214,10 +271,24 @@ export function NotifyHandler(
     }) => {
       try {
         let ProtobufType = ROOT.lookupType(signalType);
-        let result = ProtobufType.decode(payload);
-        client.emit("NotifySignal", signalType, result);
+        let data = ProtobufType.decode(payload);
+        client.dispatchEvent(
+          new DataEvent("NotifySignal", {
+            command,
+            messageType,
+            signalType,
+            data,
+          })
+        );
       } catch (error) {
-        client.emit("NotifySignal", signalType);
+        client.dispatchEvent(
+          new DataEvent("NotifySignal", {
+            command,
+            messageType,
+            signalType,
+            data: undefined,
+          })
+        );
       }
     }
   );

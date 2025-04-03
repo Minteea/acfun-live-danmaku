@@ -2,16 +2,16 @@
 
 ## 简介
 
-* acfun-live-danmaku是基于[ACFUN-FOSS/ac-danmu.js](https://github.com/ACFUN-FOSS/ac-danmu.js)的Typescript改进版本，是[orzogc/acfundanmu](https://github.com/orzogc/acfundanmu)的Nodejs实现
-* 这些项目的诞生都离不开[wpscott/AcFunDanmaku](https://github.com/wpscott/AcFunDanmaku/tree/master/AcFunDanmu)提供的实现思路和配置文件，请给他们点Star
+- acfun-live-danmaku 是基于[ACFUN-FOSS/ac-danmu.js](https://github.com/ACFUN-FOSS/ac-danmu.js)的 Typescript 改进版本，是[orzogc/acfundanmu](https://github.com/orzogc/acfundanmu)的 Nodejs 实现
+- 这些项目的诞生都离不开[wpscott/AcFunDanmaku](https://github.com/wpscott/AcFunDanmaku/tree/master/AcFunDanmu)提供的实现思路和配置文件，请给他们点 Star
 
-## acfun-live-danmaku是一个用于获取acfun直播弹幕的服务端js组件
+## acfun-live-danmaku 是一个用于获取 acfun 直播弹幕的服务端 js 组件
 
-* 因为使用了buffer所以不能运行在浏览器环境下, 编写使用node v16 lts
+- 因为使用了 buffer 所以不能运行在浏览器环境下, 编写使用 node v16 lts
 
 ### 使用方式
 
-``` JavaScript
+```JavaScript
 const { getAcClient } = require("acfun-live-danmaku")
 
 // 使用init(主播房间号)初始化客户端
@@ -34,7 +34,7 @@ AcClient("8500263").then(({ client }) => {
 
 或者
 
-``` JavaScript
+```JavaScript
 const { getAcClient } = require("acfun-live-danmaku")
 
 // 使用init(主播房间号)初始化客户端
@@ -56,7 +56,7 @@ client.on("Comment", (danmaku) => {
 
 收到的弹幕返回如下
 
-``` JavaScript
+```JavaScript
 {
     content: '晚安',
     sendTimeMs: Long {
@@ -82,19 +82,28 @@ client.on("Comment", (danmaku) => {
 
 ### 事件列表
 
-| 事件                | 消息                    | payload类型                        |
-|---------------------|-------------------------|------------------------------------|
-| EnterRoomAck          | 程序进入直播间        | null                              |
-| Comment               | 弹幕                  | CommonActionSignalComment          |
-| Like                  | 点赞                  | CommonActionSignalLike            |
-| Gift                  | 发送礼物              | CommonActionSignalGift            |
-| UserFollowAuthor      | 关注主播              | CommonActionSignalUserFollowAuthor |
-| UserEnterRoom         | 用户进入直播间         | CommonActionSignalUserEnterRoom  |
-| DisplayInfo           | 当前直播间数据状态     | CommonStateSignalDisplayInfo      |
-| RecentComment         | 当前弹幕列表           | CommonStateSignalRecentComment   |
-| TopUsers              | 前几名用户的数据       | CommonStateSignalTopUsers        |
-| JoinClub              | 用户加入主播守护团     | AcfunActionSignalJoinClub        |
+| 事件             | 消息               | payload 类型                       |
+| ---------------- | ------------------ | ---------------------------------- |
+| open             | 已连接到服务器     |                                    |
+| close            | 连接已关闭         |                                    |
+| message          | 接收到消息         |                                    |
+| error            | 连接发生错误       |                                    |
+|                  |                    |                                    |
+| EnterRoomAck     | 已连接到直播间     |                                    |
+|                  |                    |                                    |
+| ActionSignal     | 行为事件           |                                    |
+| Comment          | 弹幕               | CommonActionSignalComment          |
+| Like             | 点赞               | CommonActionSignalLike             |
+| Gift             | 发送礼物           | CommonActionSignalGift             |
+| UserFollowAuthor | 关注主播           | CommonActionSignalUserFollowAuthor |
+| UserEnterRoom    | 用户进入直播间     | CommonActionSignalUserEnterRoom    |
+| JoinClub         | 用户加入主播守护团 | AcfunActionSignalJoinClub          |
+|                  |                    |                                    |
+| StateSignal      | 状态事件           |                                    |
+| DisplayInfo      | 当前直播间数据状态 | CommonStateSignalDisplayInfo       |
+| RecentComment    | 当前弹幕列表       | CommonStateSignalRecentComment     |
+| TopUsers         | 前几名用户的数据   | CommonStateSignalTopUsers          |
 
 ### 安装
 
- `npm i acfun-live-danmaku --save`
+`npm i acfun-live-danmaku --save`

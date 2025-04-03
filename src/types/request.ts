@@ -1,17 +1,3 @@
-/** 登录信息 */
-export interface LoginInfo {
-  userId: number;
-  st: string;
-  security: string;
-}
-
-/** 直播信息 */
-export interface LiveInfo {
-  liveId: string;
-  availableTickets: string[];
-  enterRoomAttach: string;
-}
-
 export interface StartPlayInfo {
   liveId: string;
   availableTickets: string[];
@@ -35,7 +21,7 @@ export interface StartPlayInfo {
   panoramic: boolean;
 }
 
-export interface GiftInfo {
+export interface GiftListItem {
   giftId: number;
   giftName: string;
   arLiveName: string;
@@ -73,4 +59,4 @@ export interface GiftInfo {
   cornerMarkerText: string;
 }
 
-export type GiftList = GiftInfo[];
+export type GiftList = GiftListItem[];
