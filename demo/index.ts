@@ -10,10 +10,6 @@ getAcClient(3473754)
     client.addEventListener("open", () => {
       console.log("已连接到直播服务器");
     });
-    client.addEventListener("ActionSignal", (e) => {
-      console.log(e);
-    });
-    client.addEventListener("StateSignal", (e) => {});
     client.addEventListener("EnterRoomAck", () => {
       console.log("已连接到直播间");
     });
