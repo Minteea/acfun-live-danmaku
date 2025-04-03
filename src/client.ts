@@ -1,13 +1,13 @@
 import { commandHandler } from "./handler";
-import * as proto from "./proto";
+import * as proto from "./utils/proto";
 import { LiveInfo, LoginInfo } from "./types";
 import { url } from "./config";
-import { ROOT } from "./proto";
+import { ROOT } from "./utils/proto";
 import { MessageData } from "./types/message";
-import { ErrorEvent, CloseEvent } from "./utils/ponyfill";
+import { ErrorEvent, CloseEvent } from "./ponyfill/event";
 import Long from "long";
 
-interface ClientTokens extends LoginInfo, LiveInfo {}
+export interface ClientTokens extends LoginInfo, LiveInfo {}
 
 const shortSignalNameMap: Record<string, string> = {};
 

@@ -1,6 +1,6 @@
 import ProtoBufJs, { Long } from "protobufjs";
 
-import { config } from "./config";
+import { config } from "../config";
 import { protoJson } from "./protos.bundle";
 
 export const ROOT = ProtoBufJs.Root.fromJSON(protoJson);

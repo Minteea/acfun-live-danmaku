@@ -4,9 +4,9 @@ import {
   genHeartbeatPack,
   genKeepAlivePack,
   genPushMessagePack,
-} from "./proto";
+} from "./utils/proto";
 import { AcClient, DataEvent } from "./client";
-import { ROOT } from "./proto";
+import { ROOT } from "./utils/proto";
 import { MessageData } from "./types/message";
 import { inflate } from "pako";
 
