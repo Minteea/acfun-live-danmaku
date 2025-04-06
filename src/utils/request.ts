@@ -1,6 +1,12 @@
 import { url, config, USER_AGENT } from "../config";
 import { GiftList, LoginInfo, StartPlayInfo } from "../types";
 
+function getError<T>(message: string, cause: T): Error {
+  const error = new Error(message);
+  (error as any).cause = cause;
+  return error;
+}
+
 /** 自定义fetch设置 */
 export interface FetchOptions {
   /** 自定义fetch函数(适用于请求中转等情况) */
@@ -51,6 +57,9 @@ export async function requestDidCookie(
   options?: FetchOptions
 ): Promise<Record<"_did", string>> {
   const res = await customFetch(options, url.LOGIN);
+  if (!res.ok) {
+    throw getError("Response Error", res);
+  }
   const cookie = getSetCookie(res.headers);
   return cookie;
 }
@@ -71,10 +80,13 @@ export async function requestVisitorLogin(options?: FetchOptions): Promise<{
       "Content-Type": "application/x-www-form-urlencoded",
     },
   });
+  if (!res.ok) {
+    throw getError("Response Error", res);
+  }
   const data = await res.json();
   if (data.result == 0) {
     return data;
-  } else throw data;
+  } else throw getError("Response Data Error", data);
 }
 
 /** 获取用户登录凭证
@@ -93,10 +105,13 @@ export async function requestTokenGet(options: FetchOptions): Promise<{
       method: "POST",
     }
   );
+  if (!res.ok) {
+    throw getError("Response Error", res);
+  }
   const data = await res.json();
   if (data.result == 0) {
     return data;
-  } else throw data;
+  } else throw getError("Response Data Error", data);
 }
 
 /** 获取用户登录cookie
@@ -121,9 +136,12 @@ export async function requestLoginSigninCookie(
       },
     }
   );
+  if (!res.ok) {
+    throw getError("Response Error", res);
+  }
   const data = await res.json();
   if (data.result != 0) {
-    throw new Error(data.result);
+    throw getError("Response Data Error", data);
   }
   const cookie = getSetCookie(res.headers);
   return cookie;
@@ -170,9 +188,12 @@ export async function getStartPlayInfo(
       body: `authorId=${authorId}&pullStreamType=FLV`,
     }
   );
+  if (!res.ok) {
+    throw getError("Response Error", res);
+  }
   const data = await res.json();
   if (data.result != 1) {
-    throw data;
+    throw getError("Response Data Error", data);
   }
   return data.data;
 }
@@ -220,6 +241,9 @@ export async function getGiftList(
       body: `visitorId=${userId}&liveId=${liveId}`,
     }
   );
+  if (!res.ok) {
+    throw getError("Response Error", res);
+  }
   const data = await res.json();
   if (data.result != 1) {
     throw data;
