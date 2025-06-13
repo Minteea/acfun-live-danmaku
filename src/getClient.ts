@@ -7,7 +7,7 @@ import {
   requestVisitorLogin,
   requestLoginSigninCookie,
 } from "./utils";
-import { Cookies } from "./utils/cookie";
+import { Cookies } from "@floating-live/cookies";
 
 export async function getAcClient(
   authorId: number,

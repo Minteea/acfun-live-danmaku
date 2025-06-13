@@ -26,6 +26,7 @@
     "url": "git+https://github.com/Minteea/acfun-live-danmaku"
   },
   "dependencies": {
+    "@floating-live/cookies": "^0.1.0",
     "long": "^5.3.1",
     "pako": "^2.1.0",
     "protobufjs": "^7.4.0"
