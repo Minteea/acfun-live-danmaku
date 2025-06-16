@@ -9,8 +9,7 @@
     "tsc": "tsc -b",
     "clear": "rimraf ./dist",
     "demo": "tsx demo/index.ts",
-    "build-test": "npm run build && node example/index.js",
-    "build": "npm run clear && npm run tsc",
+    "build": "npm run clear && npm run tsc && tsc-alias",
     "prepack": "npm run build",
     "postpack": "npm run clear"
   },
@@ -34,6 +33,7 @@
   "devDependencies": {
     "@types/pako": "^2.0.3",
     "rimraf": "^6.0.1",
+    "tsc-alias": "^1.8.16",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2"
   }
